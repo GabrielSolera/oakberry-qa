@@ -1086,28 +1086,36 @@ function buildSwipeCard(a, idx, tab, onDone){
 function wireSwipeItem(wrap){
   const content = wrap.querySelector('.swipe-content');
   const actionsWidth = wrap.querySelectorAll('.swipe-btn').length * 76;
-  let startX=0, dragging=false, open=false, moved=false;
+  let startX=0, startY=0, dragging=false, open=false, moved=false;
   content.addEventListener('pointerdown', (e)=>{
-    dragging = true; moved=false; startX = e.clientX; content.style.transition='none';
-    try{ content.setPointerCapture(e.pointerId); }catch(err){}
+    dragging = true; moved=false; startX = e.clientX; startY = e.clientY; content.style.transition='none';
   });
   content.addEventListener('pointermove', (e)=>{
     if(!dragging) return;
-    let delta = e.clientX - startX + (open?-actionsWidth:0);
-    if(Math.abs(e.clientX-startX)>4) moved = true;
+    const dx = e.clientX-startX, dy = e.clientY-startY;
+    if(!moved && Math.abs(dx) > Math.abs(dy) && Math.abs(dx) > 6) moved = true;
+    if(!moved) return;
+    let delta = dx + (open?-actionsWidth:0);
     delta = Math.min(0, Math.max(-actionsWidth, delta));
     content.style.transform = `translateX(${delta}px)`;
   });
   function endDrag(e){
     if(!dragging) return;
     dragging=false; content.style.transition='transform .2s ease';
-    const delta = e.clientX - startX + (open?-actionsWidth:0);
-    if(delta < -actionsWidth/2){ content.style.transform = `translateX(-${actionsWidth}px)`; open=true; }
-    else { content.style.transform = 'translateX(0)'; open=false; }
-    if(moved) content.onclick = (ev)=>{ ev.stopPropagation(); content.onclick=null; };
+    if(moved){
+      const dx = (typeof e.clientX==='number' ? e.clientX : startX) - startX;
+      const delta = dx + (open?-actionsWidth:0);
+      if(delta < -actionsWidth/2){ content.style.transform = `translateX(-${actionsWidth}px)`; open=true; }
+      else { content.style.transform = 'translateX(0)'; open=false; }
+    } else if(open){
+      content.style.transform = 'translateX(0)'; open=false;
+    }
   }
   content.addEventListener('pointerup', endDrag);
   content.addEventListener('pointercancel', endDrag);
+  content.addEventListener('click', (e)=>{
+    if(moved || open){ e.stopPropagation(); e.preventDefault(); }
+  }, true);
 }
 
 async function archiveAudit(id){ await sb.from('storeaudit_audits').update({archived:true}).eq('id',id); }
