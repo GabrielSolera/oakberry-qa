@@ -173,6 +173,13 @@ a{color:var(--purple);}
 .audit-card-info .t1{font-weight:700; font-size:14.5px;}
 .audit-card-info .t2{font-size:12.5px; color:#8a7791; margin-top:2px;}
 .chev{color:#c3b4c8; font-size:18px;}
+.swipe-item{position:relative; overflow:hidden; border-radius:14px; margin-bottom:10px;}
+.swipe-item .audit-card{margin-bottom:0;}
+.swipe-actions{position:absolute; top:0; right:0; bottom:0; display:flex;}
+.swipe-btn{width:76px; border:none; color:#fff; font-size:11.5px; font-weight:700; display:flex; align-items:center; justify-content:center; text-align:center; padding:0 6px; line-height:1.2;}
+.swipe-btn.archive{background:var(--blue);}
+.swipe-btn.delete{background:var(--red);}
+.swipe-content{position:relative; z-index:1; touch-action:pan-y; background:transparent;}
 .draft-card{
   display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line);
   border-left:5px solid var(--granola); border-radius:12px; padding:12px 14px; margin-top:8px;
@@ -502,6 +509,11 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
     <div class="hero" style="padding-bottom:6px;">
       <h2>Historial</h2>
       <p>Todas las auditorías guardadas, de todas las tiendas.</p>
+    </div>
+    <div class="tabs" id="historyTabs">
+      <div class="tab active" data-htab="activas">Activas</div>
+      <div class="tab" data-htab="archivadas">Archivadas</div>
+      <div class="tab" data-htab="basurero">Basurero</div>
     </div>
     <div id="historyList" style="margin-top:12px;"><div class="spinner-wrap"><div class="spinner"></div></div></div>
   </div>
@@ -848,6 +860,7 @@ async function boot(){
   switchView('view-dashboard');
   renderDashboard();
   loadRecentAudits();
+  purgeOldTrash();
 }
 
 /* ======================= DATA LOADERS ======================= */
@@ -862,7 +875,7 @@ async function loadTemplate(){
 }
 async function loadRecentAudits(){
   const list = document.getElementById('recentList');
-  const { data, error } = await sb.from('storeaudit_audits').select('*').order('created_at', {ascending:false}).limit(60);
+  const { data, error } = await sb.from('storeaudit_audits').select('*').not('score_max','is',null).eq('archived', false).is('deleted_at', null).order('created_at', {ascending:false}).limit(60);
   if(error){ list.innerHTML = '<div class="empty">No se pudo cargar el historial.</div>'; return; }
   audits = data || [];
   renderDashboard();
@@ -985,11 +998,124 @@ document.getElementById('btnConfig').onclick = ()=>{ switchView('view-config'); 
 document.getElementById('btnReports').onclick = ()=>{ switchView('view-reports'); renderReports(); };
 
 /* ======================= HISTORY VIEW ======================= */
-function renderHistory(){
+let historyTab = 'activas';
+document.querySelectorAll('#historyTabs .tab').forEach(t=>{
+  t.onclick = ()=>{ historyTab = t.dataset.htab; renderHistory(); };
+});
+
+async function loadHistoryAudits(){
+  let q = sb.from('storeaudit_audits').select('*').not('score_max','is',null).order('created_at',{ascending:false}).limit(200);
+  if(historyTab==='activas') q = q.eq('archived', false).is('deleted_at', null);
+  else if(historyTab==='archivadas') q = q.eq('archived', true).is('deleted_at', null);
+  else if(historyTab==='basurero') q = q.not('deleted_at','is',null);
+  const { data } = await q;
+  return data || [];
+}
+
+async function renderHistory(){
+  document.querySelectorAll('#historyTabs .tab').forEach(t=> t.classList.toggle('active', t.dataset.htab===historyTab));
   const list = document.getElementById('historyList');
-  if(audits.length===0){ list.innerHTML = '<div class="empty">No hay auditorías guardadas todavía.</div>'; return; }
+  list.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  const rows = await loadHistoryAudits();
   list.innerHTML = '';
-  audits.forEach((a,i)=> list.appendChild(auditCard(a,i)));
+  if(historyTab==='basurero' && rows.length){
+    const btn = document.createElement('button');
+    btn.className = 'btn secondary block';
+    btn.textContent = '🗑️ Vaciar basurero (' + rows.length + ')';
+    btn.style.marginBottom = '10px';
+    btn.onclick = async ()=>{
+      if(!confirm(`¿Eliminar permanentemente ${rows.length} auditoría(s)? Esta acción no se puede deshacer.`)) return;
+      showToast('Vaciando basurero…');
+      for(const a of rows) await purgeAuditPermanently(a.id);
+      renderHistory();
+    };
+    list.appendChild(btn);
+  }
+  if(rows.length===0){
+    const emptyMsgs = { activas:'No hay auditorías guardadas todavía.', archivadas:'No hay auditorías archivadas.', basurero:'El basurero está vacío.' };
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = emptyMsgs[historyTab];
+    list.appendChild(empty);
+    return;
+  }
+  rows.forEach((a,i)=> list.appendChild(buildSwipeCard(a, i, historyTab)));
+}
+
+function buildSwipeCard(a, idx, tab){
+  const wrap = document.createElement('div');
+  wrap.className = 'swipe-item';
+  const actions = document.createElement('div');
+  actions.className = 'swipe-actions';
+  if(tab==='activas'){
+    actions.innerHTML = `<button class="swipe-btn archive" data-act="archive">Archivar</button><button class="swipe-btn delete" data-act="trash">Eliminar</button>`;
+  } else if(tab==='archivadas'){
+    actions.innerHTML = `<button class="swipe-btn archive" data-act="restore">Restaurar</button><button class="swipe-btn delete" data-act="trash">Eliminar</button>`;
+  } else {
+    actions.innerHTML = `<button class="swipe-btn archive" data-act="untrash">Restaurar</button><button class="swipe-btn delete" data-act="purge">Borrar ya</button>`;
+  }
+  wrap.appendChild(actions);
+  const card = auditCard(a, idx);
+  card.classList.add('swipe-content');
+  wrap.appendChild(card);
+  wireSwipeItem(wrap);
+  actions.querySelectorAll('button').forEach(btn=>{
+    btn.onclick = async (e)=>{
+      e.stopPropagation();
+      const act = btn.dataset.act;
+      if(act==='archive'){ await archiveAudit(a.id); showToast('Auditoría archivada.'); }
+      else if(act==='restore'){ await unarchiveAudit(a.id); showToast('Auditoría restaurada.'); }
+      else if(act==='untrash'){ await restoreFromTrash(a.id); showToast('Auditoría restaurada.'); }
+      else if(act==='trash'){ if(!confirm('¿Mover esta auditoría al basurero?')) return; await trashAudit(a.id); showToast('Movida al basurero.'); }
+      else if(act==='purge'){ if(!confirm('¿Eliminar esta auditoría permanentemente? No se puede deshacer.')) return; await purgeAuditPermanently(a.id); }
+      renderHistory();
+    };
+  });
+  return wrap;
+}
+
+function wireSwipeItem(wrap){
+  const content = wrap.querySelector('.swipe-content');
+  const actionsWidth = wrap.querySelectorAll('.swipe-btn').length * 76;
+  let startX=0, dragging=false, open=false, moved=false;
+  content.addEventListener('pointerdown', (e)=>{
+    dragging = true; moved=false; startX = e.clientX; content.style.transition='none';
+    try{ content.setPointerCapture(e.pointerId); }catch(err){}
+  });
+  content.addEventListener('pointermove', (e)=>{
+    if(!dragging) return;
+    let delta = e.clientX - startX + (open?-actionsWidth:0);
+    if(Math.abs(e.clientX-startX)>4) moved = true;
+    delta = Math.min(0, Math.max(-actionsWidth, delta));
+    content.style.transform = `translateX(${delta}px)`;
+  });
+  function endDrag(e){
+    if(!dragging) return;
+    dragging=false; content.style.transition='transform .2s ease';
+    const delta = e.clientX - startX + (open?-actionsWidth:0);
+    if(delta < -actionsWidth/2){ content.style.transform = `translateX(-${actionsWidth}px)`; open=true; }
+    else { content.style.transform = 'translateX(0)'; open=false; }
+    if(moved) content.onclick = (ev)=>{ ev.stopPropagation(); content.onclick=null; };
+  }
+  content.addEventListener('pointerup', endDrag);
+  content.addEventListener('pointercancel', endDrag);
+}
+
+async function archiveAudit(id){ await sb.from('storeaudit_audits').update({archived:true}).eq('id',id); }
+async function unarchiveAudit(id){ await sb.from('storeaudit_audits').update({archived:false}).eq('id',id); }
+async function trashAudit(id){ await sb.from('storeaudit_audits').update({deleted_at:new Date().toISOString()}).eq('id',id); }
+async function restoreFromTrash(id){ await sb.from('storeaudit_audits').update({deleted_at:null}).eq('id',id); }
+async function purgeAuditPermanently(id){
+  const { data: photos } = await sb.from('storeaudit_photos').select('storage_path').eq('audit_id', id);
+  if(photos && photos.length){ await sb.storage.from(PHOTOS_BUCKET).remove(photos.map(p=>p.storage_path)); }
+  await sb.from('storeaudit_photos').delete().eq('audit_id', id);
+  await sb.from('storeaudit_responses').delete().eq('audit_id', id);
+  await sb.from('storeaudit_audits').delete().eq('id', id);
+}
+async function purgeOldTrash(){
+  const cutoff = new Date(Date.now() - 30*86400000).toISOString();
+  const { data } = await sb.from('storeaudit_audits').select('id').not('deleted_at','is',null).lt('deleted_at', cutoff);
+  if(data && data.length){ for(const a of data) await purgeAuditPermanently(a.id); }
 }
 
 function animateCounts(scope){
@@ -1717,8 +1843,17 @@ async function openDetail(id){
 
   host.innerHTML = html;
   document.getElementById('btnPdf').onclick = ()=> window.print();
-  document.getElementById('btnEmailSummary').onclick = ()=>{
+  document.getElementById('btnEmailSummary').onclick = async ()=>{
     pendingEmailAudit = { audit:a, responses:responses||[] };
+    if(navigator.share){
+      try{
+        await navigator.share({
+          title: 'Auditoría de tienda — ' + a.store_name,
+          text: buildSummaryText(a, responses||[]),
+        });
+        return;
+      }catch(e){ /* user cancelled or unsupported — fall back to mailto modal below */ }
+    }
     document.getElementById('emailModal').classList.add('show');
   };
 }
