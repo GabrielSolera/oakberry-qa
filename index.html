@@ -548,7 +548,7 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
       <h2>Configuración</h2>
       <p>Tiendas, formulario y usuarios autorizados.</p>
     </div>
-    <div class="tabs">
+    <div class="tabs" id="configTabs">
       <div class="tab active" data-tab="tiendas">Tiendas</div>
       <div class="tab" data-tab="formulario">Formulario</div>
       <div class="tab" data-tab="usuarios">Usuarios</div>
@@ -1908,12 +1908,12 @@ document.getElementById('sendEmail').onclick = ()=>{
 };
 
 /* ======================= CONFIG (master) ======================= */
-document.querySelectorAll('.tab').forEach(tab=>{
+document.querySelectorAll('#configTabs .tab').forEach(tab=>{
   tab.onclick = ()=>{ configTab = tab.dataset.tab; renderConfig(); };
 });
 
 async function renderConfig(){
-  document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.tab===configTab));
+  document.querySelectorAll('#configTabs .tab').forEach(t=> t.classList.toggle('active', t.dataset.tab===configTab));
   const host = document.getElementById('configHost');
   host.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
 
