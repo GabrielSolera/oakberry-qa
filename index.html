@@ -1,0 +1,1820 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Oakberry QA — Auditorías</title>
+<meta name="theme-color" content="#3A1A52">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Oakberry QA">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='38' fill='%233A1A52'/%3E%3Ctext x='90' y='118' font-family='Georgia,serif' font-weight='700' font-size='96' fill='%23F5EEE0' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E">
+<link id="manifestLink" rel="manifest">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;0,9..144,700;1,9..144,500;1,9..144,600&family=Space+Grotesk:wght@400;500;600;700&family=Oswald:wght@500;600;700&display=swap');
+
+:root{
+  --purple:#3A1A52;
+  --purple-deep:#2A1240;
+  --purple-soft:#EDE4F0;
+  --off:#F5EEE0;
+  --granola:#EAA55E;
+  --granola-soft:#FBEBD7;
+  --red:#FF4B5F;
+  --red-soft:#FFE2E5;
+  --green:#3FAE97;
+  --green-soft:#DEF3EE;
+  --blue:#5B94B7;
+  --blue-soft:#E4EDF3;
+  --celeste:#4FC3E8;
+  --celeste-soft:#E1F4FA;
+  --ink:#2A1B33;
+  --line:#E1D8E6;
+  --card:#FFFFFF;
+  --shadow:0 2px 0 rgba(58,26,82,0.06);
+  --safe-t:env(safe-area-inset-top,0px);
+  --safe-b:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0; height:100%;}
+body{
+  background:radial-gradient(circle at 20% 0%, #4A2266 0%, var(--purple) 55%, var(--purple-deep) 100%) fixed;
+  color:var(--ink);
+  font-family:'Space Grotesk', sans-serif;
+  min-height:100%;
+  -webkit-font-smoothing:antialiased;
+  padding-top:var(--safe-t); padding-bottom:var(--safe-b);
+}
+html{scroll-padding-top:var(--safe-t);}
+::selection{background:var(--granola-soft);}
+h1,h2,h3{font-family:'Fraunces', serif; margin:0; letter-spacing:-0.01em;}
+.wordmark{font-family:'Space Grotesk', sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.03em;}
+button{font-family:inherit; cursor:pointer;}
+input,textarea,select{font-family:inherit;}
+:focus-visible{outline:2px solid var(--purple); outline-offset:2px;}
+a{color:var(--purple);}
+
+.app{max-width:760px; margin:0 auto; padding:0 18px 90px;}
+.hidden{display:none !important;}
+
+/* ---------- Login ---------- */
+#loginScreen{
+  min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px;
+  background:radial-gradient(circle at 20% 10%, #4A2266 0%, var(--purple) 45%, var(--purple-deep) 100%);
+}
+.login-card{
+  width:100%; max-width:380px; background:var(--card); border-radius:22px; padding:32px 26px 28px;
+  box-shadow:0 24px 60px rgba(20,8,30,0.35);
+}
+.login-mark{display:flex; flex-direction:column; align-items:center; margin-bottom:18px;}
+.parrot{width:56px; height:56px;}
+.login-mark .brandname{font-family:'Space Grotesk',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.04em; font-size:20px; color:var(--purple); margin-top:10px;}
+.login-mark .brandsub{font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:#8a7791; margin-top:2px;}
+.login-field{margin-top:14px;}
+.login-field label{display:block; font-size:12px; font-weight:600; color:#6b5d72; margin-bottom:6px;}
+.login-field input{
+  width:100%; border:1px solid var(--line); border-radius:10px; padding:12px 13px; font-size:15px; background:#fff;
+}
+.login-btn{
+  width:100%; margin-top:18px; background:var(--purple); color:#fff; border:none; border-radius:11px;
+  padding:14px; font-weight:700; font-size:15px; box-shadow:0 8px 20px rgba(58,26,82,.25);
+}
+.login-btn:disabled{opacity:.5;}
+.login-error{margin-top:12px; font-size:12.5px; color:var(--red); text-align:center;}
+.login-foot{margin-top:16px; text-align:center; font-size:12px; color:#9a8ba0;}
+
+/* ---------- Top bar ---------- */
+.topbar{
+  position:sticky; top:0; z-index:40; background:rgba(58,26,82,0.55); backdrop-filter:blur(10px);
+  padding:16px 12px 12px; margin:0 -18px; border-bottom:1px solid rgba(255,255,255,.14);
+  display:flex; align-items:center; justify-content:space-between; gap:10px;
+}
+.brand{display:flex; align-items:center; gap:10px;}
+.brand svg{width:32px; height:32px;}
+.brand-text h1{font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; font-family:'Space Grotesk',sans-serif;}
+.brand-text span{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.6);}
+.topbar-actions{display:flex; gap:8px;}
+.icon-btn{
+  background:var(--card); border:1px solid var(--line); border-radius:9px;
+  width:38px; height:38px; display:flex;align-items:center;justify-content:center;
+  box-shadow:var(--shadow); font-size:16px;
+}
+.icon-btn:active{transform:translateY(1px); box-shadow:none;}
+
+/* ---------- Views ---------- */
+.view{display:none; padding-top:18px; animation:fadeIn .25s ease;}
+.view.active{display:block;}
+@keyframes fadeIn{from{opacity:0; transform:translateY(4px);} to{opacity:1; transform:translateY(0);}}
+@keyframes riseIn{from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);}}
+@keyframes popIn{from{opacity:0; transform:scale(.88);} to{opacity:1; transform:scale(1);}}
+@keyframes barGrow{from{width:0;}}
+.anim-rise{animation:riseIn .45s cubic-bezier(.2,.8,.2,1) both;}
+.anim-pop{animation:popIn .4s cubic-bezier(.34,1.56,.64,1) both;}
+.audit-card, .store-report-row, .critical-item, .sched-row, .kpi-card, .cfg-row{transition:transform .18s ease, box-shadow .18s ease;}
+.audit-card:hover, .store-report-row:hover{transform:translateY(-2px); box-shadow:0 8px 20px rgba(20,8,30,.14);}
+.kpi-card .num{transition:none;}
+
+.btn{
+  border:1px solid var(--line); background:#fff; color:var(--purple);
+  padding:13px 18px; border-radius:11px; font-weight:700; font-size:14.5px;
+  display:inline-flex; align-items:center; justify-content:center; gap:8px;
+  box-shadow:0 6px 16px rgba(20,8,30,.18); transition:transform .05s ease;
+}
+.btn:active{transform:translateY(1px);}
+.btn.secondary{background:var(--purple-soft); color:var(--purple); border-color:var(--purple-soft); box-shadow:none;}
+.btn.ghost{background:transparent; border-color:transparent; color:#fff; box-shadow:none; padding:8px 4px;}
+.btn.danger{background:var(--red); border-color:var(--red); color:#fff;}
+.btn.granola{background:var(--granola); border-color:var(--granola); color:#fff;}
+.btn.block{width:100%;}
+.btn:disabled{opacity:.4; pointer-events:none;}
+.btn.sm{padding:8px 12px; font-size:12.5px; border-radius:8px;}
+
+/* ---------- Dashboard ---------- */
+.hero{padding:6px 2px 20px;}
+.hero h2{font-size:25px; font-weight:700; line-height:1.15; font-style:italic; color:#fff;}
+.hero p{color:rgba(255,255,255,.72); font-size:14px; margin-top:6px; max-width:46ch;}
+.country-toggle{display:flex; gap:8px; margin-top:14px;}
+.country-btn{flex:1; padding:12px 10px; border-radius:12px; border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.08); font-weight:700; font-size:13.5px; text-align:center; color:#fff;}
+.country-btn.active{background:var(--celeste); color:#123; border-color:var(--celeste);}
+.store-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:8px; margin-top:10px;}
+.store-tile{
+  padding:11px 12px; border-radius:11px; border:1px solid var(--line); background:var(--card);
+  font-size:13px; font-weight:600; color:var(--ink); text-align:left;
+}
+.store-tile.active{background:var(--celeste); color:#123; border-color:var(--celeste);}
+.store-tile.all{grid-column:1 / -1; text-align:center; color:#8a7791;}
+.store-tile.add{border-style:dashed; color:#8a7791; text-align:center;}
+
+.section-label{
+  font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.55);
+  margin:26px 0 10px; font-weight:700;
+}
+.audit-card{
+  background:var(--card); border:1px solid var(--line); border-radius:14px;
+  padding:14px 16px; margin-bottom:10px; display:flex; align-items:center; gap:14px;
+  box-shadow:var(--shadow);
+}
+.audit-card:active{transform:translateY(1px);}
+.mini-stamp{
+  flex:0 0 auto; width:52px; height:52px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center; flex-direction:column;
+  font-family:'Oswald',sans-serif; font-weight:600; border:2px solid currentColor;
+}
+.mini-stamp b{font-size:15px; line-height:1;}
+.mini-stamp small{font-size:6.7px; letter-spacing:.02em;}
+.audit-card-info{flex:1; min-width:0;}
+.audit-card-info .t1{font-weight:700; font-size:14.5px;}
+.audit-card-info .t2{font-size:12.5px; color:#8a7791; margin-top:2px;}
+.chev{color:#c3b4c8; font-size:18px;}
+.empty{
+  border:1px dashed rgba(255,255,255,.3); border-radius:14px; padding:26px 18px; text-align:center;
+  color:rgba(255,255,255,.6); font-size:13.5px; background:rgba(255,255,255,.05);
+}
+.spinner-wrap{display:flex; justify-content:center; padding:40px 0;}
+.spinner{
+  width:28px; height:28px; border-radius:50%; border:3px solid rgba(255,255,255,.22); border-top-color:var(--celeste);
+  animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ---------- Stepper form ---------- */
+.progress-wrap{padding:14px 2px 6px;}
+.progress-track{height:6px; background:rgba(255,255,255,.2); border-radius:100px; overflow:hidden;}
+.progress-fill{height:100%; background:linear-gradient(90deg,var(--celeste),var(--granola)); border-radius:100px; transition:width .3s ease;}
+.progress-meta{display:flex; justify-content:space-between; font-size:12px; color:rgba(255,255,255,.65); margin-top:8px;}
+
+.step-card{
+  background:var(--card); border:1px solid var(--line); border-radius:18px;
+  padding:20px 18px 22px; margin-top:14px; box-shadow:var(--shadow);
+}
+.step-eyebrow{font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--granola); font-weight:700;}
+.step-title{font-size:21px; margin-top:4px; font-style:italic; color:var(--purple);}
+.step-sub{font-size:13px; color:#8a7791; margin-top:4px;}
+
+.field{margin-top:16px;}
+.field label{display:block; font-size:12.5px; font-weight:600; color:#6b5d72; margin-bottom:6px;}
+.field input[type=text], .field input[type=number], .field input[type=date], .field input[type=time], .field input[type=email], .field input[type=password], .field select, .field textarea{
+  width:100%; border:1px solid var(--line); border-radius:9px; padding:11px 12px;
+  background:#fff; font-size:14.5px; color:var(--ink);
+}
+.field textarea{resize:vertical; min-height:64px;}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+
+/* checklist item */
+.item{border-top:1px solid var(--line); padding:16px 0;}
+.item:first-child{border-top:none; padding-top:4px;}
+.item-q{font-size:14.5px; font-weight:600; line-height:1.35;}
+.seg{display:flex; gap:6px; margin-top:10px;}
+.seg button{
+  flex:1; border:1px solid var(--line); background:#fff; border-radius:9px;
+  padding:9px 4px; font-size:12.5px; font-weight:700; color:#6b5d72;
+}
+.seg button[data-v=si].on{background:var(--green-soft); border-color:var(--green); color:#1e6e5c;}
+.seg button[data-v=no].on{background:var(--red-soft); border-color:var(--red); color:#a8202f;}
+.seg button[data-v=na].on{background:var(--purple-soft); border-color:#9a83a3; color:#5b4a62;}
+.item-row2{display:flex; gap:8px; margin-top:8px; align-items:center;}
+.item-comment{flex:1;}
+.item-comment input{
+  width:100%; border:1px solid var(--line); border-radius:8px; padding:8px 10px;
+  font-size:13px; background:#fff;
+}
+.item-comment input::placeholder{color:#c3b4c8;}
+.photo-btn{
+  flex:0 0 auto; width:38px; height:38px; border-radius:8px; border:1px solid var(--line);
+  background:#fff; display:flex; align-items:center; justify-content:center; font-size:16px; color:var(--purple);
+}
+.photo-strip{display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;}
+.photo-thumb{position:relative; width:56px; height:56px; border-radius:8px; overflow:hidden; border:1px solid var(--line);}
+.photo-thumb img{width:100%; height:100%; object-fit:cover; display:block;}
+.photo-thumb .x{
+  position:absolute; top:2px; right:2px; width:16px; height:16px; border-radius:50%;
+  background:rgba(42,27,51,.75); color:#fff; font-size:10px; display:flex; align-items:center; justify-content:center; border:none;
+}
+.photo-uploading{font-size:11px; color:#8a7791; margin-top:6px;}
+
+.number-input-wrap input{max-width:100%;}
+
+.section-score{
+  display:flex; justify-content:space-between; align-items:center;
+  margin-top:6px; padding:10px 14px; background:var(--purple-soft); border-radius:10px;
+  font-size:13px; font-weight:700; color:var(--purple);
+}
+
+.step-actions{display:flex; gap:10px; margin-top:20px;}
+
+/* signature pad */
+.sigpad-wrap{border:1px dashed var(--line); border-radius:12px; background:#fff; margin-top:8px; position:relative;}
+canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border-radius:12px;}
+.sigpad-clear{
+  position:absolute; top:8px; right:8px; font-size:11.5px; background:var(--off);
+  border:1px solid var(--line); border-radius:7px; padding:5px 9px; color:#6b5d72;
+}
+
+/* summary */
+.summary-row{display:flex; justify-content:space-between; padding:11px 0; border-top:1px solid var(--line); font-size:14px;}
+.summary-row:first-child{border-top:none;}
+.summary-row .lbl{color:#8a7791;}
+.summary-row .val{font-weight:700;}
+.tag-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;}
+.tag{font-size:12px; padding:5px 10px; border-radius:100px; background:var(--red-soft); color:#a8202f; font-weight:700;}
+
+.stamp-stage{display:flex; justify-content:center; padding:14px 0 4px;}
+.stamp-big{position:relative; width:172px; height:172px;}
+.stamp-big svg{width:100%; height:100%; transform:rotate(-7deg);}
+.stamp-big .center{
+  position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;
+  transform:rotate(-7deg); font-family:'Oswald',sans-serif;
+}
+.stamp-big .pct{font-size:34px; font-weight:700; line-height:1;}
+.stamp-big .word{font-size:11px; letter-spacing:.08em; margin-top:2px; font-weight:600;}
+
+/* detail view */
+.detail-head{display:flex; align-items:center; gap:14px; padding:6px 0 10px;}
+#detailHost{background:var(--card); border-radius:18px; padding:18px 16px; margin-top:10px; box-shadow:0 10px 30px rgba(20,8,30,.25);}
+.detail-title h2{font-size:20px; font-style:italic; color:var(--purple);}
+.detail-title p{font-size:13px; color:#8a7791; margin-top:2px;}
+.detail-section{margin-top:22px;}
+.detail-section h3{font-size:15.5px; font-weight:700; color:var(--purple);}
+.detail-item{padding:10px 0; border-top:1px solid var(--line); display:flex; gap:10px; align-items:flex-start;}
+.detail-item:first-child{border-top:none;}
+.dot{flex:0 0 auto; width:20px; height:20px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; margin-top:1px;}
+.dot.si{background:var(--green-soft); color:#1e6e5c;}
+.dot.no{background:var(--red-soft); color:#a8202f;}
+.dot.na{background:var(--purple-soft); color:#5b4a62;}
+.dot.num{background:var(--blue-soft); color:#2c5872;}
+.di-text{flex:1;}
+.di-q{font-size:13.5px;}
+.di-c{font-size:12.5px; color:#8a7791; margin-top:3px; font-style:italic;}
+.di-photos{display:flex; gap:6px; margin-top:8px; flex-wrap:wrap;}
+.di-photos img{width:64px; height:64px; object-fit:cover; border-radius:8px; border:1px solid var(--line);}
+
+.sig-block{display:flex; gap:16px; margin-top:8px;}
+.sig-card{flex:1; border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; text-align:center;}
+.sig-card img{max-width:100%; max-height:70px;}
+.sig-card .name{font-size:12.5px; margin-top:6px; font-weight:700;}
+.sig-card .role{font-size:10.5px; color:#8a7791; text-transform:uppercase; letter-spacing:.05em;}
+
+.share-bar{display:flex; gap:10px; margin-top:22px;}
+
+/* reports */
+.kpi-row{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px;}
+.kpi-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:var(--shadow);}
+.kpi-card .num{font-size:24px; font-weight:700; color:var(--purple); font-family:'Oswald',sans-serif;}
+.kpi-card .lbl{font-size:11.5px; color:#8a7791; margin-top:2px; text-transform:uppercase; letter-spacing:.03em;}
+.report-section{margin-top:24px;}
+.report-section h3{font-size:15.5px; font-weight:700; color:#fff; margin-bottom:10px;}
+#storeDetailPanel{background:var(--card); border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(20,8,30,.2);}
+#storeDetailPanel h3{color:var(--purple);}
+.store-report-row{
+  position:relative; display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line);
+  border-radius:12px; padding:11px 13px; margin-top:8px; overflow:hidden;
+}
+.store-report-row .srr-bar{
+  position:absolute; left:0; top:0; bottom:0; background:rgba(79,195,232,.12); border-radius:12px;
+  transition:width 1s cubic-bezier(.16,1,.3,1); z-index:0;
+}
+.store-report-row > *{position:relative; z-index:1;}
+.country-avg-row{display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; margin-top:8px; box-shadow:var(--shadow);}
+.country-avg-row .cname{font-weight:700; font-size:14.5px; flex:0 0 auto; width:90px;}
+.country-avg-track{flex:1; height:10px; background:var(--purple-soft); border-radius:100px; overflow:hidden;}
+.country-avg-fill{height:100%; border-radius:100px; transition:width 1s cubic-bezier(.16,1,.3,1);}
+.country-avg-pct{flex:0 0 auto; font-weight:700; font-size:14px; width:42px; text-align:right; font-family:'Oswald',sans-serif;}
+.store-report-row .srr-score{
+  flex:0 0 auto; width:42px; height:42px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+  font-family:'Oswald',sans-serif; font-weight:700; font-size:12px; border:2px solid currentColor;
+}
+.store-report-row .srr-main{flex:1; min-width:0;}
+.store-report-row .srr-main .t1{font-weight:700; font-size:13.5px;}
+.store-report-row .srr-main .t2{font-size:11.5px; color:#8a7791; margin-top:1px;}
+.badge-status{font-size:10px; font-weight:700; padding:3px 8px; border-radius:100px; text-transform:uppercase; letter-spacing:.03em; flex:0 0 auto;}
+.badge-status.never{background:#eee; color:#888;}
+.badge-status.overdue{background:var(--red-soft); color:#a8202f;}
+.badge-status.ok{background:var(--green-soft); color:#1e6e5c;}
+.critical-item{
+  display:flex; justify-content:space-between; align-items:center; padding:10px 13px; background:var(--card);
+  border:1px solid var(--line); border-radius:11px; margin-top:8px; gap:10px;
+}
+.critical-item .ci-text{font-size:13px; flex:1;}
+.critical-item .ci-count{font-size:12px; font-weight:700; color:#a8202f; background:var(--red-soft); padding:3px 9px; border-radius:100px; flex:0 0 auto;}
+.sched-row{
+  display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line);
+  border-radius:12px; padding:11px 13px; margin-top:8px;
+}
+.sched-date{
+  flex:0 0 auto; width:44px; text-align:center; background:var(--purple-soft); border-radius:9px; padding:6px 2px;
+}
+.sched-date .d{font-size:15px; font-weight:700; color:var(--purple); line-height:1;}
+.sched-date .m{font-size:9px; text-transform:uppercase; color:var(--purple); letter-spacing:.03em;}
+.sched-main{flex:1; min-width:0;}
+.sched-main .t1{font-weight:700; font-size:13.5px;}
+.sched-main .t2{font-size:11.5px; color:#8a7791;}
+.trend-bars{display:flex; align-items:flex-end; gap:3px; height:32px; margin-top:4px;}
+.trend-bars .bar{width:7px; border-radius:2px 2px 0 0; background:var(--purple-soft);}
+.report-tabs{display:flex; gap:6px; margin-top:14px; flex-wrap:wrap;}
+.report-tab{padding:8px 13px; border-radius:100px; border:1px solid var(--line); background:var(--card); font-size:12.5px; font-weight:600; color:#6b5d72;}
+.report-tab.active{background:var(--purple); color:#fff; border-color:var(--purple);}
+
+/* config / admin */
+.tabs{display:flex; gap:6px; margin-top:14px; border-bottom:1px solid rgba(255,255,255,.2);}
+.tab{padding:10px 14px; font-size:13px; font-weight:700; color:rgba(255,255,255,.55); border-bottom:2px solid transparent;}
+.tab.active{color:#fff; border-color:var(--celeste);}
+.cfg-row{
+  display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line);
+  border-radius:12px; padding:12px 14px; margin-top:10px;
+}
+.cfg-row .main{flex:1; min-width:0;}
+.cfg-row .t1{font-weight:700; font-size:14px;}
+.cfg-row .t2{font-size:12px; color:#8a7791;}
+.badge{font-size:10.5px; font-weight:700; padding:3px 8px; border-radius:100px; text-transform:uppercase; letter-spacing:.04em;}
+.badge.master{background:var(--granola-soft); color:#8a5215;}
+.badge.supervisor{background:var(--blue-soft); color:#2c5872;}
+.badge.inactive{background:#eee; color:#999;}
+.cfg-section-block{margin-top:22px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px 16px;}
+.cfg-item-row{display:flex; gap:8px; align-items:center; padding:8px 0; border-top:1px solid var(--line);}
+.cfg-item-row:first-of-type{border-top:none;}
+.cfg-item-row input[type=text]{flex:1; border:1px solid var(--line); border-radius:7px; padding:7px 9px; font-size:13px;}
+.cfg-item-row select{border:1px solid var(--line); border-radius:7px; padding:7px 6px; font-size:12px;}
+.icon-mini{width:28px; height:28px; border-radius:7px; border:1px solid var(--line); background:#fff; display:flex; align-items:center; justify-content:center; font-size:13px;}
+
+/* toast */
+.toast{
+  position:fixed; bottom:calc(22px + var(--safe-b)); left:50%; transform:translateX(-50%);
+  background:var(--ink); color:#fff; padding:11px 18px; border-radius:100px;
+  font-size:13px; font-weight:600; z-index:100; opacity:0; pointer-events:none; transition:opacity .25s ease, transform .25s ease;
+  box-shadow:0 6px 18px rgba(0,0,0,.18); max-width:88vw; text-align:center;
+}
+.toast.show{opacity:1; transform:translateX(-50%) translateY(-4px);}
+
+.modal-backdrop{
+  position:fixed; inset:0; background:rgba(30,15,40,.45); z-index:90; display:none; align-items:flex-end; justify-content:center;
+}
+.modal-backdrop.show{display:flex;}
+.modal{
+  background:var(--card); width:100%; max-width:760px; border-radius:18px 18px 0 0; padding:22px 20px calc(28px + var(--safe-b));
+  animation:slideUp .25s ease; max-height:86vh; overflow-y:auto;
+}
+@keyframes slideUp{from{transform:translateY(30px); opacity:0;} to{transform:translateY(0); opacity:1;}}
+.modal h3{font-size:17px; margin-bottom:12px; color:var(--purple); font-style:italic;}
+@media(min-width:640px){
+  .modal-backdrop{align-items:center;}
+  .modal{border-radius:18px; max-width:420px;}
+}
+
+/* print / PDF */
+@media print{
+  body *{visibility:hidden;}
+  #view-detail, #view-detail *{visibility:visible;}
+  #view-detail{position:absolute; left:0; top:0; width:100%; padding:0 12px;}
+  .share-bar, .topbar, #btnBackFromDetail{display:none !important;}
+}
+</style>
+</head>
+<body>
+
+<div id="loginScreen">
+  <div class="login-card">
+    <div class="login-mark">
+      <img class="brand-logo-img hidden" alt="Oakberry" style="max-width:220px; max-height:70px; object-fit:contain;">
+      <svg class="parrot brand-logo-fallback" viewBox="0 0 100 100"><path fill="#3A1A52" d="M55 8c-4 0-7 3-9 6-9 2-17 9-21 18-3 1-6 3-8 6 3 0 5 0 7 1-2 4-3 9-3 14 0 16 13 28 29 28h34V71H62c8-3 14-10 16-19 2 1 4 1 6 0-2-3-5-5-8-6-1-9-8-17-17-21-1-8-2-14-4-17z"/><circle cx="63" cy="30" r="4" fill="#F5EEE0"/></svg>
+      <div class="brandname brand-logo-fallback">Oakberry QA</div>
+      <div class="brandsub">Auditorías de tienda</div>
+    </div>
+    <div class="login-field"><label>Correo</label><input type="email" id="loginEmail" autocomplete="username" placeholder="tucorreo@oaklatam.com"></div>
+    <div class="login-field"><label>Contraseña</label><input type="password" id="loginPassword" autocomplete="current-password"></div>
+    <button class="login-btn" id="btnLogin">Iniciar sesión</button>
+    <div class="login-error hidden" id="loginError"></div>
+    <div class="login-foot">Acceso solo para usuarios autorizados de Oakberry.</div>
+  </div>
+</div>
+
+<div id="mainApp" class="hidden">
+<div class="app">
+
+  <div class="topbar">
+    <div class="brand">
+      <img class="brand-logo-img hidden" alt="Oakberry" style="max-width:120px; max-height:32px; object-fit:contain;">
+      <svg class="brand-logo-fallback" viewBox="0 0 100 100"><path fill="#3A1A52" d="M55 8c-4 0-7 3-9 6-9 2-17 9-21 18-3 1-6 3-8 6 3 0 5 0 7 1-2 4-3 9-3 14 0 16 13 28 29 28h34V71H62c8-3 14-10 16-19 2 1 4 1 6 0-2-3-5-5-8-6-1-9-8-17-17-21-1-8-2-14-4-17z"/><circle cx="63" cy="30" r="4" fill="#F5EEE0"/></svg>
+      <div class="brand-text">
+        <h1 class="brand-logo-fallback">Oakberry QA</h1>
+        <span id="userLabel">Cargando…</span>
+      </div>
+    </div>
+    <div class="topbar-actions">
+      <button class="icon-btn" id="btnReports" title="Reportes">📊</button>
+      <button class="icon-btn" id="btnConfig" title="Configuración">⚙</button>
+      <button class="icon-btn" id="btnHistoryAll" title="Historial">☰</button>
+      <button class="icon-btn" id="btnHome" title="Inicio">⌂</button>
+      <button class="icon-btn" id="btnLogout" title="Salir">⏻</button>
+    </div>
+  </div>
+
+  <!-- ============ DASHBOARD ============ -->
+  <div class="view active" id="view-dashboard">
+    <div class="hero">
+      <h2>Inspecciones de tienda</h2>
+      <p>Revisá el estado operativo, de limpieza, seguridad y financiero de cada tienda, con evidencia fotográfica y firma digital.</p>
+    </div>
+    <div class="country-toggle" id="countryToggle"></div>
+    <div class="store-grid" id="storeRow"></div>
+    <button class="btn block" id="btnNewAudit" style="margin-top:16px;">+ Nueva auditoría</button>
+    <div class="section-label" id="recentLabel">Auditorías recientes</div>
+    <div id="recentList"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- ============ FORM (stepper) ============ -->
+  <div class="view" id="view-form">
+    <div class="progress-wrap">
+      <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+      <div class="progress-meta"><span id="progressLabel">Paso 1</span><span id="progressPct">0%</span></div>
+    </div>
+    <div id="stepHost"></div>
+  </div>
+
+  <!-- ============ HISTORY ============ -->
+  <div class="view" id="view-history">
+    <div class="hero" style="padding-bottom:6px;">
+      <h2>Historial</h2>
+      <p>Todas las auditorías guardadas, de todas las tiendas.</p>
+    </div>
+    <div id="historyList" style="margin-top:12px;"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- ============ DETAIL ============ -->
+  <div class="view" id="view-detail">
+    <button class="btn ghost" id="btnBackFromDetail">← Volver</button>
+    <div id="detailHost"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- ============ REPORTS ============ -->
+  <div class="view" id="view-reports">
+    <div class="hero" style="padding-bottom:0;">
+      <h2>Reportería</h2>
+      <p>Estado de las tiendas, puntos críticos y próximas auditorías.</p>
+    </div>
+    <div id="reportsHost"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- ============ CONFIG (master) ============ -->
+  <div class="view" id="view-config">
+    <button class="btn ghost" id="btnBackFromConfig">← Volver</button>
+    <div class="hero" style="padding-bottom:0;">
+      <h2>Configuración</h2>
+      <p>Tiendas, formulario y usuarios autorizados.</p>
+    </div>
+    <div class="tabs">
+      <div class="tab active" data-tab="tiendas">Tiendas</div>
+      <div class="tab" data-tab="formulario">Formulario</div>
+      <div class="tab" data-tab="usuarios">Usuarios</div>
+      <div class="tab" data-tab="marca">Marca</div>
+      <div class="tab" data-tab="perfil">Mi cuenta</div>
+    </div>
+    <div id="configHost"></div>
+  </div>
+
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<!-- store modal -->
+<div class="modal-backdrop" id="storeModal">
+  <div class="modal">
+    <h3>Agregar tienda</h3>
+    <div class="field"><label>Nombre de la tienda</label><input type="text" id="newStoreName" placeholder="Ej. San Pedro Mall"></div>
+    <div class="field"><label>País</label><select id="newStoreCountry"><option>Costa Rica</option><option>Panamá</option></select></div>
+    <div class="step-actions">
+      <button class="btn secondary block" id="cancelStore">Cancelar</button>
+      <button class="btn block" id="saveStore">Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- email modal -->
+<div class="modal-backdrop" id="emailModal">
+  <div class="modal">
+    <h3>Enviar resumen</h3>
+    <p style="font-size:12.5px;color:#8a7791;margin-top:-6px;margin-bottom:14px;">Abre tu app de correo con el resumen precargado. No se puede enviar automáticamente desde el navegador.</p>
+    <div class="field"><label>Destinatarios (separados por coma)</label><input type="text" id="emailTo" placeholder="gerencia@oaklatam.com"></div>
+    <div class="step-actions">
+      <button class="btn secondary block" id="cancelEmail">Cancelar</button>
+      <button class="btn block" id="sendEmail">Abrir correo</button>
+    </div>
+  </div>
+</div>
+
+<!-- new section modal -->
+<div class="modal-backdrop" id="sectionModal">
+  <div class="modal">
+    <h3>Nueva sección</h3>
+    <div class="field"><label>Título</label><input type="text" id="newSecTitle" placeholder="Ej. Iluminación exterior"></div>
+    <div class="field"><label>Subtítulo (opcional)</label><input type="text" id="newSecSub" placeholder="Breve descripción"></div>
+    <div class="step-actions">
+      <button class="btn secondary block" id="cancelSection">Cancelar</button>
+      <button class="btn block" id="saveSection">Crear sección</button>
+    </div>
+  </div>
+</div>
+
+<!-- add user modal -->
+<div class="modal-backdrop" id="userModal">
+  <div class="modal">
+    <h3>Agregar usuario</h3>
+    <div class="field"><label>Nombre completo</label><input type="text" id="newUserName"></div>
+    <div class="field"><label>Correo</label><input type="email" id="newUserEmail" placeholder="nombre@oaklatam.com"></div>
+    <div class="field"><label>Puesto (opcional)</label><input type="text" id="newUserTitle" placeholder="Ej. Supervisor de tienda"></div>
+    <div class="field"><label>Rol</label><select id="newUserRole"><option value="supervisor">Supervisor</option><option value="master">Master</option></select></div>
+    <div class="step-actions">
+      <button class="btn secondary block" id="cancelUser">Cancelar</button>
+      <button class="btn block" id="saveUser">Crear usuario</button>
+    </div>
+  </div>
+</div>
+
+<!-- schedule modal -->
+<div class="modal-backdrop" id="scheduleModal">
+  <div class="modal">
+    <h3>Agendar auditoría</h3>
+    <div class="field"><label>Tienda</label><select id="schedStore"></select></div>
+    <div class="field"><label>Fecha planeada</label><input type="date" id="schedDate"></div>
+    <div class="field"><label>Tipo</label>
+      <select id="schedTipo"><option>Rutina</option><option>Sorpresa</option><option>Seguimiento</option><option>Apertura</option></select>
+    </div>
+    <div class="field"><label>Notas (opcional)</label><input type="text" id="schedNotes" placeholder="Ej. enfocarse en limpieza de cocina"></div>
+    <div class="step-actions">
+      <button class="btn secondary block" id="cancelSchedule">Cancelar</button>
+      <button class="btn block" id="saveSchedule">Agendar</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="hiddenPhotoInput" accept="image/*" capture="environment" class="hidden">
+
+<script>
+/* ======================= SUPABASE INIT ======================= */
+const SUPABASE_URL = 'https://iixkfghwfkzpudvdwjww.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_cQS-UVqLfAlId0Ql7vUy-A_3Ywqnopi';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const PHOTOS_BUCKET = 'storeaudit-photos';
+const BRANDING_BUCKET = 'storeaudit-branding';
+const LOGO_PATH = 'logo.png';
+function logoUrl(bust){ return `${SUPABASE_URL}/storage/v1/object/public/${BRANDING_BUCKET}/${LOGO_PATH}` + (bust ? `?t=${bust}` : ''); }
+const FN_ADMIN_USERS = SUPABASE_URL + '/functions/v1/storeaudit-admin-users';
+
+function tryApplyLogo(){
+  const url = logoUrl(Date.now());
+  const testImg = new Image();
+  testImg.onload = ()=>{
+    document.querySelectorAll('.brand-logo-img').forEach(img=>{ img.src = url; img.classList.remove('hidden'); });
+    document.querySelectorAll('.brand-logo-fallback').forEach(el=> el.classList.add('hidden'));
+    const at = document.querySelector('link[rel="apple-touch-icon"]');
+    if(at) at.setAttribute('href', url);
+    try{
+      const manifest = {
+        name:"Oakberry QA — Auditorías", short_name:"Oakberry QA", start_url:".", display:"standalone",
+        background_color:"#F5EEE0", theme_color:"#3A1A52",
+        icons:[{ src:url, sizes:"192x192", type:"image/png" }]
+      };
+      document.getElementById('manifestLink').setAttribute('href','data:application/manifest+json,'+encodeURIComponent(JSON.stringify(manifest)));
+    }catch(e){}
+  };
+  testImg.onerror = ()=>{};
+  testImg.src = url;
+}
+document.addEventListener('DOMContentLoaded', tryApplyLogo);
+
+/* PWA manifest as data URI */
+(function(){
+  const manifest = {
+    name: "Oakberry QA — Auditorías",
+    short_name: "Oakberry QA",
+    start_url: ".",
+    display: "standalone",
+    background_color: "#F5EEE0",
+    theme_color: "#3A1A52",
+    icons: [{ src: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='40' fill='%233A1A52'/%3E%3Ctext x='96' y='128' font-family='Georgia,serif' font-weight='700' font-size='104' fill='%23F5EEE0' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E", sizes:"192x192", type:"image/svg+xml" }]
+  };
+  const blob = 'data:application/manifest+json,' + encodeURIComponent(JSON.stringify(manifest));
+  document.getElementById('manifestLink').setAttribute('href', blob);
+})();
+
+/* ======================= STATE ======================= */
+let session = null, profile = null;
+let stores = [];
+let sections = []; // with items
+let audits = [];
+let current = null;
+let stepIndex = 0;
+let steps = [];
+let sigCanvases = {};
+let historyFilterStore = null;
+let selectedCountry = null;
+let pendingEmailAudit = null;
+let configTab = 'tiendas';
+let allProfilesCache = [];
+
+/* ======================= UTIL ======================= */
+function uid(){ return crypto.randomUUID(); }
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 2600);
+}
+function switchView(id){
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo({top:0, behavior:'smooth'});
+}
+function fmtDate(iso){
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-CR',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' + d.toLocaleTimeString('es-CR',{hour:'2-digit',minute:'2-digit'});
+}
+function scoreWord(pct){
+  if(pct>=90) return {word:'APROBADO', color:'var(--green)'};
+  if(pct>=75) return {word:'REVISAR', color:'var(--granola)'};
+  return {word:'ACCIÓN REQ.', color:'var(--red)'};
+}
+function resolvedColor(varColor){
+  const map = {'var(--green)':'#3FAE97','var(--granola)':'#EAA55E','var(--red)':'#FF4B5F'};
+  return map[varColor] || varColor;
+}
+function stampSVG(pct, size){
+  const {word,color} = scoreWord(pct);
+  const c2 = resolvedColor(color);
+  const r = size/2 - 6; const c = size/2;
+  return `<svg viewBox="0 0 ${size} ${size}">
+    <circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${c2}" stroke-width="3"/>
+    <circle cx="${c}" cy="${c}" r="${r-7}" fill="none" stroke="${c2}" stroke-width="1" stroke-dasharray="2 4"/>
+    <path id="arcTop${size}" d="M ${c-r+10} ${c} A ${r-10} ${r-10} 0 1 1 ${c+r-10} ${c}" fill="none"/>
+    <text font-family="Oswald, sans-serif" font-size="${size*0.06}" font-weight="600" letter-spacing="2" fill="${c2}">
+      <textPath href="#arcTop${size}" startOffset="50%" text-anchor="middle">OAKBERRY QUALITY ASSURANCE</textPath>
+    </text></svg>`;
+}
+
+/* ======================= AUTH ======================= */
+document.getElementById('btnLogin').onclick = doLogin;
+document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+async function doLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.classList.add('hidden');
+  if(!email || !password){ errEl.textContent='Completá correo y contraseña.'; errEl.classList.remove('hidden'); return; }
+  const btn = document.getElementById('btnLogin');
+  btn.disabled = true; btn.textContent = 'Ingresando…';
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  btn.disabled = false; btn.textContent = 'Iniciar sesión';
+  if(error){ errEl.textContent = error.message + (error.status ? ' (código '+error.status+')' : ''); errEl.classList.remove('hidden'); console.error('Login error:', error); }
+}
+document.getElementById('btnLogout').onclick = async ()=>{ await sb.auth.signOut(); };
+
+sb.auth.onAuthStateChange((event, s)=>{
+  session = s;
+  if(s){ boot(); } else { showLogin(); }
+});
+
+function showLogin(){
+  document.getElementById('loginScreen').classList.remove('hidden');
+  document.getElementById('mainApp').classList.add('hidden');
+}
+async function boot(){
+  document.getElementById('loginScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  const { data, error } = await sb.from('storeaudit_profiles').select('*').eq('id', session.user.id).single();
+  if(error || !data){
+    showToast('Tu cuenta no tiene perfil asignado. Contactá al administrador.');
+    await sb.auth.signOut();
+    return;
+  }
+  profile = data;
+  document.getElementById('userLabel').textContent = profile.full_name + (profile.role==='master' ? ' · Master' : (profile.title ? ' · '+profile.title : ''));
+  document.getElementById('btnConfig').style.display = profile.role==='master' ? 'flex' : 'none';
+  await Promise.all([loadStores(), loadTemplate()]);
+  switchView('view-dashboard');
+  renderDashboard();
+  loadRecentAudits();
+}
+
+/* ======================= DATA LOADERS ======================= */
+async function loadStores(){
+  const { data } = await sb.from('storeaudit_stores').select('*').eq('active', true).order('country').order('name');
+  stores = data || [];
+}
+async function loadTemplate(){
+  const { data: secs } = await sb.from('storeaudit_sections').select('*').eq('active', true).order('sort_order');
+  const { data: items } = await sb.from('storeaudit_items').select('*').eq('active', true).order('sort_order');
+  sections = (secs||[]).map(s=>({...s, items:(items||[]).filter(i=>i.section_id===s.id)}));
+}
+async function loadRecentAudits(){
+  const list = document.getElementById('recentList');
+  const { data, error } = await sb.from('storeaudit_audits').select('*').order('created_at', {ascending:false}).limit(60);
+  if(error){ list.innerHTML = '<div class="empty">No se pudo cargar el historial.</div>'; return; }
+  audits = data || [];
+  renderDashboard();
+}
+
+/* ======================= DASHBOARD ======================= */
+function renderDashboard(){
+  const countries = [...new Set(stores.map(s=>s.country))];
+  if(!selectedCountry || !countries.includes(selectedCountry)) selectedCountry = countries[0] || null;
+
+  const toggle = document.getElementById('countryToggle');
+  toggle.innerHTML = '';
+  countries.forEach(country=>{
+    const btn = document.createElement('div');
+    btn.className = 'country-btn' + (selectedCountry===country?' active':'');
+    btn.textContent = country;
+    btn.onclick = ()=>{ selectedCountry = country; historyFilterStore = null; renderDashboard(); };
+    toggle.appendChild(btn);
+  });
+
+  const row = document.getElementById('storeRow');
+  row.innerHTML = '';
+  const allTile = document.createElement('div');
+  allTile.className = 'store-tile all' + (historyFilterStore===null?' active':'');
+  allTile.textContent = 'Todas las tiendas de ' + (selectedCountry||'');
+  allTile.onclick = ()=>{ historyFilterStore=null; renderDashboard(); };
+  row.appendChild(allTile);
+  stores.filter(s=>s.country===selectedCountry).forEach(s=>{
+    const tile = document.createElement('div');
+    tile.className = 'store-tile' + (historyFilterStore===s.name?' active':'');
+    tile.textContent = s.name;
+    tile.onclick = ()=>{ historyFilterStore=s.name; renderDashboard(); };
+    row.appendChild(tile);
+  });
+  const addTile = document.createElement('div');
+  addTile.className = 'store-tile add';
+  addTile.textContent = '+ Agregar tienda';
+  addTile.onclick = ()=>{
+    if(profile.role!=='master'){ showToast('Solo el usuario master puede agregar tiendas.'); return; }
+    document.getElementById('newStoreCountry').value = selectedCountry || 'Costa Rica';
+    document.getElementById('storeModal').classList.add('show');
+  };
+  row.appendChild(addTile);
+
+  const list = document.getElementById('recentList');
+  const filtered = (historyFilterStore ? audits.filter(a=>a.store_name===historyFilterStore) : audits).slice(0,6);
+  document.getElementById('recentLabel').textContent = historyFilterStore ? ('Auditorías · ' + historyFilterStore) : 'Auditorías recientes';
+  list.innerHTML = '';
+  if(filtered.length===0){
+    list.innerHTML = '<div class="empty">Aún no hay auditorías guardadas' + (historyFilterStore?(' para '+historyFilterStore):'') + '.</div>';
+    return;
+  }
+  filtered.forEach((a,i)=> list.appendChild(auditCard(a,i)));
+}
+function auditCard(a, idx){
+  const {word,color} = scoreWord(a.score_pct);
+  const card = document.createElement('div');
+  card.className = 'audit-card anim-rise';
+  if(typeof idx==='number') card.style.animationDelay = Math.min(idx*0.05,0.5)+'s';
+  card.innerHTML = `
+    <div class="mini-stamp" style="color:${color}"><b>${a.score_pct}%</b><small>${word}</small></div>
+    <div class="audit-card-info">
+      <div class="t1">${a.store_name}</div>
+      <div class="t2">${fmtDate(a.created_at)} · ${a.evaluador_name||'—'}</div>
+    </div>
+    <div class="chev">›</div>`;
+  card.onclick = ()=> openDetail(a.id);
+  return card;
+}
+
+document.getElementById('cancelStore').onclick = ()=> document.getElementById('storeModal').classList.remove('show');
+document.getElementById('saveStore').onclick = async ()=>{
+  const name = document.getElementById('newStoreName').value.trim();
+  const country = document.getElementById('newStoreCountry').value;
+  if(!name){ showToast('Escribí un nombre de tienda.'); return; }
+  const { error } = await sb.from('storeaudit_stores').insert({ name, country });
+  if(error){ showToast('No se pudo agregar: '+error.message); return; }
+  await loadStores();
+  document.getElementById('newStoreName').value='';
+  document.getElementById('storeModal').classList.remove('show');
+  renderDashboard();
+  showToast('Tienda agregada.');
+};
+
+document.getElementById('btnHome').onclick = ()=>{ switchView('view-dashboard'); renderDashboard(); };
+document.getElementById('btnHistoryAll').onclick = ()=>{ renderHistory(); switchView('view-history'); };
+document.getElementById('btnBackFromDetail').onclick = ()=>{ switchView('view-dashboard'); renderDashboard(); };
+document.getElementById('btnBackFromConfig').onclick = ()=>{ switchView('view-dashboard'); renderDashboard(); };
+document.getElementById('btnConfig').onclick = ()=>{ switchView('view-config'); renderConfig(); };
+document.getElementById('btnReports').onclick = ()=>{ switchView('view-reports'); renderReports(); };
+
+/* ======================= HISTORY VIEW ======================= */
+function renderHistory(){
+  const list = document.getElementById('historyList');
+  if(audits.length===0){ list.innerHTML = '<div class="empty">No hay auditorías guardadas todavía.</div>'; return; }
+  list.innerHTML = '';
+  audits.forEach((a,i)=> list.appendChild(auditCard(a,i)));
+}
+
+function animateCounts(scope){
+  (scope||document).querySelectorAll('[data-count]').forEach(el=>{
+    const target = parseFloat(el.dataset.count) || 0;
+    const suffix = el.dataset.suffix || '';
+    const dur = 700; const start = performance.now();
+    function tick(now){
+      const p = Math.min(1, (now-start)/dur);
+      const eased = 1 - Math.pow(1-p, 3);
+      el.textContent = Math.round(target*eased) + suffix;
+      if(p<1) requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+  });
+}
+
+/* ======================= REPORTS ======================= */
+const OVERDUE_DAYS = 45;
+let reportsCache = null;
+
+async function loadReportsData(){
+  const [auditsRes, noRespRes, schedRes] = await Promise.all([
+    sb.from('storeaudit_audits').select('id,store_id,store_name,score_pct,score_pts,score_max,created_at,evaluador_name,acciones_corregir').order('created_at',{ascending:false}).limit(500),
+    sb.from('storeaudit_responses').select('audit_id,prompt,section_key').eq('value','no').limit(4000),
+    sb.from('storeaudit_schedule').select('*').eq('status','pending').order('planned_date',{ascending:true}).limit(200),
+  ]);
+  reportsCache = {
+    audits: auditsRes.data || [],
+    noResponses: noRespRes.data || [],
+    schedule: schedRes.data || [],
+  };
+}
+
+function storeStatsFor(storeName){
+  const a = reportsCache.audits.filter(x=>x.store_name===storeName);
+  if(a.length===0) return { last:null, count:0, status:'never' };
+  const last = a[0]; // already sorted desc
+  const daysSince = (Date.now() - new Date(last.created_at).getTime()) / 86400000;
+  const status = daysSince > OVERDUE_DAYS ? 'overdue' : 'ok';
+  return { last, count:a.length, status, history:a.slice(0,6).reverse() };
+}
+
+function renderReports(){
+  document.getElementById('reportsHost').innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+  loadReportsData().then(()=> renderReportsBody());
+}
+
+function renderReportsBody(){
+  const host = document.getElementById('reportsHost');
+  const storesWithStats = stores.map(s=>({ store:s, stats:storeStatsFor(s.name) }));
+  const audited = storesWithStats.filter(x=>x.stats.last);
+  const avgScore = audited.length ? Math.round(audited.reduce((sum,x)=>sum+x.stats.last.score_pct,0)/audited.length) : 0;
+  const neverCount = storesWithStats.filter(x=>x.stats.status==='never').length;
+  const criticalCount = storesWithStats.filter(x=>x.stats.last && x.stats.last.score_pct<75).length;
+
+  let html = `
+    <div class="kpi-row">
+      <div class="kpi-card anim-pop" style="animation-delay:.02s"><div class="num" data-count="${stores.length}">0</div><div class="lbl">Tiendas activas</div></div>
+      <div class="kpi-card anim-pop" style="animation-delay:.08s"><div class="num" data-count="${avgScore}" data-suffix="%">0</div><div class="lbl">Promedio general</div></div>
+      <div class="kpi-card anim-pop" style="animation-delay:.14s"><div class="num" data-count="${neverCount}">0</div><div class="lbl">Nunca auditadas</div></div>
+      <div class="kpi-card anim-pop" style="animation-delay:.2s"><div class="num" data-count="${criticalCount}">0</div><div class="lbl">En estado crítico (&lt;75%)</div></div>
+    </div>
+
+    <div class="report-section">
+      <h3>Promedio por país</h3>`;
+
+  const countries2 = [...new Set(stores.map(s=>s.country))];
+  countries2.forEach((country,ci)=>{
+    const inCountry = storesWithStats.filter(x=>x.store.country===country && x.stats.last);
+    const avg = inCountry.length ? Math.round(inCountry.reduce((s,x)=>s+x.stats.last.score_pct,0)/inCountry.length) : 0;
+    const fillColor = avg>0 ? resolvedColor(scoreWord(avg).color) : '#999';
+    html += `<div class="country-avg-row anim-rise" style="animation-delay:${ci*0.08}s">
+      <div class="cname">${country}</div>
+      <div class="country-avg-track"><div class="country-avg-fill" data-fillpct="${avg}" style="width:0; background:${fillColor};"></div></div>
+      <div class="country-avg-pct" data-count="${avg}" data-suffix="%">0</div>
+    </div>`;
+  });
+  html += `</div>
+
+    <div class="report-section">
+      <h3>Estado por tienda</h3>`;
+
+  const sorted = storesWithStats.slice().sort((a,b)=>{
+    const pa = a.stats.last ? a.stats.last.score_pct : -1;
+    const pb = b.stats.last ? b.stats.last.score_pct : -1;
+    return pa - pb;
+  });
+  sorted.forEach(({store,stats},idx)=>{
+    const pct = stats.last ? stats.last.score_pct : null;
+    const color = pct===null ? '#999' : resolvedColor(scoreWord(pct).color);
+    const statusLabel = stats.status==='never' ? 'Sin auditar' : stats.status==='overdue' ? `Hace ${Math.floor((Date.now()-new Date(stats.last.created_at).getTime())/86400000)}d` : 'Al día';
+    html += `<div class="store-report-row anim-rise" style="animation-delay:${Math.min(idx*0.05,0.5)}s" data-storedetail="${store.name.replace(/"/g,'&quot;')}">
+      <div class="srr-bar" data-fillbarpct="${pct||0}" style="width:0;"></div>
+      <div class="srr-score" style="color:${color}">${pct===null?'—':pct+'%'}</div>
+      <div class="srr-main"><div class="t1">${store.name}</div><div class="t2">${store.country} · ${stats.count} auditoría(s)</div></div>
+      <span class="badge-status ${stats.status}">${statusLabel}</span>
+      <div class="chev">›</div>
+    </div>`;
+  });
+  html += `</div>`;
+
+  // critical points
+  const counts = {};
+  reportsCache.noResponses.forEach(r=>{ counts[r.prompt] = (counts[r.prompt]||0)+1; });
+  const topCritical = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,8);
+  html += `<div class="report-section"><h3>Puntos más críticos (toda la red)</h3>`;
+  if(topCritical.length===0){ html += `<div class="empty">Sin incumplimientos registrados todavía.</div>`; }
+  topCritical.forEach(([prompt,count],ci)=>{
+    html += `<div class="critical-item anim-rise" style="animation-delay:${ci*0.05}s"><div class="ci-text">${prompt}</div><div class="ci-count">${count}×</div></div>`;
+  });
+  html += `</div>`;
+
+  // store detail panel placeholder
+  html += `<div class="report-section hidden" id="storeDetailPanel"></div>`;
+
+  // schedule
+  html += `<div class="report-section"><h3>Próximas auditorías</h3>`;
+  if(profile.role==='master'){
+    html += `<button class="btn block" id="btnAddSchedule" style="margin-bottom:4px;">+ Agendar auditoría</button>`;
+  }
+  if(reportsCache.schedule.length===0){
+    html += `<div class="empty">No hay auditorías agendadas todavía.</div>`;
+  }
+  reportsCache.schedule.forEach(sc=>{
+    const d = new Date(sc.planned_date+'T00:00:00');
+    const day = d.getDate();
+    const month = d.toLocaleDateString('es-CR',{month:'short'}).replace('.','');
+    html += `<div class="sched-row anim-rise">
+      <div class="sched-date"><div class="d">${day}</div><div class="m">${month}</div></div>
+      <div class="sched-main"><div class="t1">${sc.store_name}</div><div class="t2">${sc.tipo}${sc.notes?' · '+sc.notes:''}</div></div>
+      ${profile.role==='master'? `<button class="icon-mini" data-schedcomplete="${sc.id}" title="Marcar completada">✓</button><button class="icon-mini" data-scheddelete="${sc.id}" title="Eliminar">✕</button>` : ''}
+    </div>`;
+  });
+  html += `</div>`;
+
+  host.innerHTML = html;
+
+  animateCounts(host);
+  requestAnimationFrame(()=>{
+    host.querySelectorAll('[data-fillpct]').forEach(el=>{ el.style.width = el.dataset.fillpct + '%'; });
+    host.querySelectorAll('[data-fillbarpct]').forEach(el=>{ el.style.width = el.dataset.fillbarpct + '%'; });
+  });
+
+  host.querySelectorAll('[data-storedetail]').forEach(row=>{
+    row.onclick = ()=> renderStoreDetail(row.dataset.storedetail);
+  });
+  const addSchedBtn = document.getElementById('btnAddSchedule');
+  if(addSchedBtn) addSchedBtn.onclick = openScheduleModal;
+  host.querySelectorAll('[data-schedcomplete]').forEach(btn=>{
+    btn.onclick = async ()=>{ await sb.from('storeaudit_schedule').update({status:'completed'}).eq('id', btn.dataset.schedcomplete); showToast('Marcada como completada.'); renderReports(); };
+  });
+  host.querySelectorAll('[data-scheddelete]').forEach(btn=>{
+    btn.onclick = async ()=>{ if(!confirm('¿Eliminar esta auditoría agendada?')) return; await sb.from('storeaudit_schedule').delete().eq('id', btn.dataset.scheddelete); renderReports(); };
+  });
+}
+
+function renderStoreDetail(storeName){
+  const panel = document.getElementById('storeDetailPanel');
+  const stats = storeStatsFor(storeName);
+  let html = `<h3>${storeName}</h3>`;
+  if(!stats.last){
+    html += `<div class="empty">Esta tienda todavía no tiene auditorías registradas.</div>`;
+  } else {
+    const trend = stats.history || [stats.last];
+    html += `<div class="trend-bars">${trend.map(a=>{
+      const c = resolvedColor(scoreWord(a.score_pct).color);
+      return `<div class="bar" style="height:${Math.max(6,a.score_pct*0.32)}px; background:${c};" title="${a.score_pct}%"></div>`;
+    }).join('')}</div>`;
+    html += `<div class="summary-row"><span class="lbl">Última calificación</span><span class="val">${stats.last.score_pct}% (${stats.last.score_pts}/${stats.last.score_max})</span></div>`;
+    html += `<div class="summary-row"><span class="lbl">Última auditoría</span><span class="val">${fmtDate(stats.last.created_at)} · ${stats.last.evaluador_name||'—'}</span></div>`;
+
+    const storeAuditIds = new Set(reportsCache.audits.filter(a=>a.store_name===storeName).map(a=>a.id));
+    const counts = {};
+    reportsCache.noResponses.forEach(r=>{ if(storeAuditIds.has(r.audit_id)) counts[r.prompt] = (counts[r.prompt]||0)+1; });
+    const top = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,5);
+    if(top.length){
+      html += `<div style="margin-top:14px; font-size:12.5px; font-weight:700; color:#6b5d72;">Puntos a reforzar</div>`;
+      top.forEach(([prompt,count])=>{ html += `<div class="critical-item"><div class="ci-text">${prompt}</div><div class="ci-count">${count}×</div></div>`; });
+    }
+    const recentActions = reportsCache.audits.filter(a=>a.store_name===storeName && a.acciones_corregir).slice(0,3)
+      .flatMap(a=>a.acciones_corregir.split('\n').map(s=>s.trim()).filter(Boolean));
+    if(recentActions.length){
+      html += `<div style="margin-top:14px; font-size:12.5px; font-weight:700; color:#6b5d72;">Planes de acción recientes</div><div class="tag-list">${[...new Set(recentActions)].slice(0,10).map(x=>`<span class="tag">${x}</span>`).join('')}</div>`;
+    }
+  }
+  html += `<button class="btn ghost" id="closeStoreDetail" style="margin-top:12px;">Cerrar</button>`;
+  panel.innerHTML = html;
+  panel.classList.remove('hidden');
+  panel.scrollIntoView({behavior:'smooth', block:'start'});
+  document.getElementById('closeStoreDetail').onclick = ()=> panel.classList.add('hidden');
+}
+
+function openScheduleModal(){
+  const sel = document.getElementById('schedStore');
+  sel.innerHTML = [...new Set(stores.map(s=>s.country))].map(country=>`
+    <optgroup label="${country}">${stores.filter(s=>s.country===country).map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`).join('');
+  document.getElementById('schedDate').value = '';
+  document.getElementById('schedNotes').value = '';
+  document.getElementById('scheduleModal').classList.add('show');
+}
+document.getElementById('cancelSchedule').onclick = ()=> document.getElementById('scheduleModal').classList.remove('show');
+document.getElementById('saveSchedule').onclick = async ()=>{
+  const storeId = document.getElementById('schedStore').value;
+  const storeName = stores.find(s=>s.id===storeId)?.name || '';
+  const date = document.getElementById('schedDate').value;
+  const tipo = document.getElementById('schedTipo').value;
+  const notes = document.getElementById('schedNotes').value.trim();
+  if(!date){ showToast('Elegí una fecha.'); return; }
+  const { error } = await sb.from('storeaudit_schedule').insert({ store_id:storeId, store_name:storeName, planned_date:date, tipo, notes: notes||null });
+  if(error){ showToast('No se pudo agendar: '+error.message); return; }
+  document.getElementById('scheduleModal').classList.remove('show');
+  showToast('Auditoría agendada.');
+  renderReports();
+};
+
+/* ======================= NEW AUDIT FLOW ======================= */
+function buildSteps(){
+  steps = [];
+  steps.push({type:'info'});
+  sections.forEach(sec=> steps.push({type:'section', sec}));
+  steps.push({type:'observaciones'});
+  steps.push({type:'firmas'});
+  steps.push({type:'resumen'});
+}
+
+document.getElementById('btnNewAudit').onclick = ()=>{
+  if(sections.length===0){ showToast('No hay secciones configuradas todavía.'); return; }
+  current = {
+    id: uid(),
+    inserted: false,
+    store_id: stores[0] ? stores[0].id : null,
+    store_name: stores[0] ? stores[0].name : '',
+    evaluador_name: profile.full_name,
+    encargado_name: '',
+    tipo: 'Rutina',
+    fecha: new Date().toISOString().slice(0,10),
+    hora: new Date().toTimeString().slice(0,5),
+    responses: {},   // item_id -> {value, comentario, section_key, prompt, item_type, sort:section_sort}
+    photos: {},      // item_id -> [{path, previewUrl}]
+    observaciones: '',
+    acciones_corregir: '',
+    fecha_mejoras: '',
+    firma_evaluador: null,
+    firma_encargado: null,
+  };
+  sections.forEach(sec=> sec.items.forEach(it=>{
+    current.responses[it.id] = { value:null, comentario:'', section_key:sec.key, section_title:sec.title, prompt:it.prompt, item_type:it.item_type };
+    current.photos[it.id] = [];
+  }));
+  buildSteps();
+  stepIndex = 0;
+  switchView('view-form');
+  renderStep();
+};
+
+function updateProgress(){
+  const pct = Math.round((stepIndex/(steps.length-1))*100);
+  document.getElementById('progressFill').style.width = pct+'%';
+  document.getElementById('progressLabel').textContent = 'Paso ' + (stepIndex+1) + ' de ' + steps.length;
+  document.getElementById('progressPct').textContent = pct+'%';
+}
+
+async function ensureAuditRow(){
+  if(current.inserted) return;
+  const { error } = await sb.from('storeaudit_audits').insert({
+    id: current.id, store_id: current.store_id, store_name: current.store_name,
+    evaluator_id: session.user.id, evaluador_name: current.evaluador_name,
+    tipo: current.tipo, fecha: current.fecha, hora: current.hora,
+  });
+  if(!error) current.inserted = true;
+}
+
+function renderStep(){
+  updateProgress();
+  const host = document.getElementById('stepHost');
+  const step = steps[stepIndex];
+
+  if(step.type==='info'){
+    host.innerHTML = `
+    <div class="step-card">
+      <div class="step-eyebrow">Información general</div>
+      <div class="step-title">Datos de la visita</div>
+      <div class="field"><label>Tienda</label>
+        <select id="f-restaurante">${[...new Set(stores.map(s=>s.country))].map(country=>`
+          <optgroup label="${country}">
+            ${stores.filter(s=>s.country===country).map(s=>`<option value="${s.id}" ${s.id===current.store_id?'selected':''}>${s.name}</option>`).join('')}
+          </optgroup>`).join('')}</select>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Fecha</label><input type="date" id="f-fecha" value="${current.fecha}"></div>
+        <div class="field"><label>Hora</label><input type="time" id="f-hora" value="${current.hora}"></div>
+      </div>
+      <div class="field"><label>Evaluador</label><input type="text" id="f-evaluador" value="${current.evaluador_name}"></div>
+      <div class="field"><label>Tipo de inspección</label>
+        <select id="f-tipo">${['Rutina','Sorpresa','Seguimiento','Apertura'].map(t=>`<option ${t===current.tipo?'selected':''}>${t}</option>`).join('')}</select>
+      </div>
+      <div class="step-actions"><button class="btn block" id="next0">Comenzar auditoría</button></div>
+    </div>`;
+    document.getElementById('next0').onclick = async ()=>{
+      const sel = document.getElementById('f-restaurante');
+      current.store_id = sel.value;
+      current.store_name = stores.find(s=>s.id===sel.value)?.name || '';
+      current.fecha = document.getElementById('f-fecha').value;
+      current.hora = document.getElementById('f-hora').value;
+      current.evaluador_name = document.getElementById('f-evaluador').value;
+      current.tipo = document.getElementById('f-tipo').value;
+      const btn = document.getElementById('next0');
+      btn.disabled = true; btn.textContent = 'Guardando…';
+      await ensureAuditRow();
+      btn.disabled = false;
+      if(!current.inserted){ showToast('No se pudo iniciar la auditoría. Revisá tu conexión.'); btn.textContent='Comenzar auditoría'; return; }
+      goStep(1);
+    };
+    return;
+  }
+
+  if(step.type==='section'){
+    const sec = step.sec;
+    host.innerHTML = `<div class="step-card">
+      <div class="step-eyebrow">Sección ${sections.indexOf(sec)+1} de ${sections.length}</div>
+      <div class="step-title">${sec.title}</div>
+      <div class="step-sub">${sec.subtitle||''}</div>
+      ${sec.items.map((it,i)=> renderItemHTML(it,i)).join('')}
+      <div class="section-score" id="secScore"></div>
+      <div class="step-actions">
+        <button class="btn secondary block" id="prevSec">Atrás</button>
+        <button class="btn block" id="nextSec">Siguiente</button>
+      </div>
+    </div>`;
+    wireItems(sec.items);
+    updateSecScore(sec);
+    document.getElementById('prevSec').onclick = ()=> goStep(stepIndex-1);
+    document.getElementById('nextSec').onclick = ()=> goStep(stepIndex+1);
+    return;
+  }
+
+  if(step.type==='observaciones'){
+    host.innerHTML = `<div class="step-card">
+      <div class="step-eyebrow">Cierre operativo</div>
+      <div class="step-title">Observaciones y plan de acción</div>
+      <div class="field"><label>Observaciones generales</label><textarea id="f-obs">${current.observaciones}</textarea></div>
+      <div class="field"><label>Principales acciones a corregir (una por línea)</label><textarea id="f-acc">${current.acciones_corregir}</textarea></div>
+      <div class="field"><label>Fecha límite para mejoras</label><input type="date" id="f-fm" value="${current.fecha_mejoras||''}"></div>
+      <div class="step-actions">
+        <button class="btn secondary block" id="prevObs">Atrás</button>
+        <button class="btn block" id="nextObs">Siguiente</button>
+      </div>
+    </div>`;
+    document.getElementById('prevObs').onclick = ()=> goStep(stepIndex-1);
+    document.getElementById('nextObs').onclick = ()=>{
+      current.observaciones = document.getElementById('f-obs').value;
+      current.acciones_corregir = document.getElementById('f-acc').value;
+      current.fecha_mejoras = document.getElementById('f-fm').value || null;
+      goStep(stepIndex+1);
+    };
+    return;
+  }
+
+  if(step.type==='firmas'){
+    host.innerHTML = `<div class="step-card">
+      <div class="step-eyebrow">Firmas</div>
+      <div class="step-title">Confirmación de la visita</div>
+      <div class="step-sub">El evaluador y el encargado de tienda firman para cerrar la auditoría.</div>
+      <div class="field"><label>Firma del evaluador — ${current.evaluador_name||''}</label>
+        <div class="sigpad-wrap"><canvas class="sigpad" id="sig-eval"></canvas><button class="sigpad-clear" data-clear="eval">Borrar</button></div>
+      </div>
+      <div class="field"><label>Nombre del encargado de tienda</label><input type="text" id="f-encargado" value="${current.encargado_name}" placeholder="Nombre completo"></div>
+      <div class="field"><label>Firma del encargado de tienda</label>
+        <div class="sigpad-wrap"><canvas class="sigpad" id="sig-enc"></canvas><button class="sigpad-clear" data-clear="enc">Borrar</button></div>
+      </div>
+      <div class="step-actions">
+        <button class="btn secondary block" id="prevSig">Atrás</button>
+        <button class="btn block" id="nextSig">Ver resumen</button>
+      </div>
+    </div>`;
+    document.getElementById('f-encargado').oninput = (e)=> current.encargado_name = e.target.value;
+    setupSignaturePad('sig-eval','eval');
+    setupSignaturePad('sig-enc','enc');
+    host.querySelectorAll('[data-clear]').forEach(btn=> btn.onclick = ()=> clearSignature(btn.dataset.clear));
+    document.getElementById('prevSig').onclick = ()=> goStep(stepIndex-1);
+    document.getElementById('nextSig').onclick = ()=>{
+      current.firma_evaluador = getSignatureData('eval');
+      current.firma_encargado = getSignatureData('enc');
+      goStep(stepIndex+1);
+    };
+    return;
+  }
+
+  if(step.type==='resumen'){
+    const {pts,max,pct} = computeScore();
+    const {word,color} = scoreWord(pct);
+    const acciones = current.acciones_corregir.split('\n').map(s=>s.trim()).filter(Boolean);
+    host.innerHTML = `<div class="step-card">
+      <div class="step-eyebrow">Resumen final</div>
+      <div class="step-title">${current.store_name}</div>
+      <div class="step-sub">${current.tipo} · ${current.fecha} ${current.hora} · Evaluador: ${current.evaluador_name||'—'}</div>
+      <div class="stamp-stage"><div class="stamp-big" style="color:${color}">${stampSVG(pct,172)}<div class="center"><div class="pct">${pct}%</div><div class="word">${word}</div></div></div></div>
+      <div class="summary-row"><span class="lbl">Puntaje total</span><span class="val">${pts} / ${max}</span></div>
+      ${acciones.length? `<div class="summary-row" style="display:block;"><span class="lbl">Acciones a corregir</span><div class="tag-list">${acciones.map(a=>`<span class="tag">${a}</span>`).join('')}</div></div>` : ''}
+      <div class="step-actions">
+        <button class="btn secondary block" id="prevRes">Atrás</button>
+        <button class="btn block" id="saveAudit">Guardar auditoría</button>
+      </div>
+    </div>`;
+    document.getElementById('prevRes').onclick = ()=> goStep(stepIndex-1);
+    document.getElementById('saveAudit').onclick = finalizeAudit;
+    return;
+  }
+}
+
+function renderItemHTML(it,i){
+  const r = current.responses[it.id];
+  const photos = current.photos[it.id] || [];
+  if(it.item_type==='number'){
+    return `<div class="item">
+      <div class="item-q">${i+1}. ${it.prompt}</div>
+      <div class="field number-input-wrap" style="margin-top:8px;"><input type="number" step="0.01" data-num="${it.id}" value="${r.value||''}" placeholder="0.00"></div>
+    </div>`;
+  }
+  return `<div class="item">
+    <div class="item-q">${i+1}. ${it.prompt}</div>
+    <div class="seg" data-idx="${it.id}">
+      <button data-v="si" class="${r.value==='si'?'on':''}">Sí cumple</button>
+      <button data-v="no" class="${r.value==='no'?'on':''}">No cumple</button>
+      <button data-v="na" class="${r.value==='na'?'on':''}">N/A</button>
+    </div>
+    <div class="item-row2">
+      <div class="item-comment"><input type="text" placeholder="Comentario (opcional)" data-c="${it.id}" value="${(r.comentario||'').replace(/"/g,'&quot;')}"></div>
+      <button class="photo-btn" data-photo="${it.id}" title="Adjuntar foto">📷</button>
+    </div>
+    <div class="photo-strip" data-strip="${it.id}">${photos.map((p,pi)=>`<div class="photo-thumb"><img src="${p.previewUrl}"><button class="x" data-rmphoto="${it.id}:${pi}">✕</button></div>`).join('')}</div>
+  </div>`;
+}
+
+function wireItems(items){
+  const host = document.getElementById('stepHost');
+  items.forEach(it=>{
+    const r = current.responses[it.id];
+    if(it.item_type==='number'){
+      const numInput = host.querySelector(`[data-num="${it.id}"]`);
+      if(numInput) numInput.oninput = (e)=>{ r.value = e.target.value; };
+      return;
+    }
+    const seg = host.querySelector(`.seg[data-idx="${it.id}"]`);
+    if(seg){
+      seg.querySelectorAll('button').forEach(btn=>{
+        btn.onclick = ()=>{
+          r.value = btn.dataset.v;
+          seg.querySelectorAll('button').forEach(b=>b.classList.remove('on'));
+          btn.classList.add('on');
+          const sec = sections.find(s=>s.items.some(x=>x.id===it.id));
+          updateSecScore(sec);
+        };
+      });
+    }
+    const cinput = host.querySelector(`[data-c="${it.id}"]`);
+    if(cinput) cinput.oninput = (e)=>{ r.comentario = e.target.value; };
+    const pbtn = host.querySelector(`[data-photo="${it.id}"]`);
+    if(pbtn) pbtn.onclick = ()=> triggerPhotoCapture(it.id);
+  });
+  host.querySelectorAll('[data-rmphoto]').forEach(btn=>{
+    btn.onclick = ()=>{
+      const [itemId, idx] = btn.dataset.rmphoto.split(':');
+      removePhoto(itemId, +idx);
+    };
+  });
+}
+
+function updateSecScore(sec){
+  const el = document.getElementById('secScore');
+  if(!el) return;
+  let pts=0,max=0;
+  sec.items.forEach(it=>{
+    if(it.item_type!=='check') return;
+    const v = current.responses[it.id].value;
+    if(v==='si'){pts+=2;max+=2;} else if(v==='no'){max+=2;}
+  });
+  el.innerHTML = `<span>Puntaje de la sección</span><span>${pts} / ${max}</span>`;
+}
+
+function computeScore(){
+  let pts=0,max=0;
+  Object.values(current.responses).forEach(r=>{
+    if(r.item_type!=='check') return;
+    if(r.value==='si'){pts+=2;max+=2;} else if(r.value==='no'){max+=2;}
+  });
+  const pct = max>0 ? Math.round((pts/max)*100) : 0;
+  return {pts,max,pct};
+}
+
+function goStep(i){ stepIndex = i; renderStep(); }
+
+/* ---------- photo capture ---------- */
+let pendingPhotoItemId = null;
+const hiddenInput = document.getElementById('hiddenPhotoInput');
+function triggerPhotoCapture(itemId){
+  if(!current.inserted){ showToast('Esperá a que la auditoría termine de iniciarse.'); return; }
+  pendingPhotoItemId = itemId;
+  hiddenInput.value = '';
+  hiddenInput.click();
+}
+hiddenInput.addEventListener('change', async (e)=>{
+  const file = e.target.files[0];
+  if(!file || !pendingPhotoItemId) return;
+  const itemId = pendingPhotoItemId;
+  const strip = document.querySelector(`[data-strip="${itemId}"]`);
+  const loadingNote = document.createElement('div');
+  loadingNote.className = 'photo-uploading';
+  loadingNote.textContent = 'Subiendo foto…';
+  if(strip) strip.after(loadingNote);
+  try{
+    const blob = await compressImage(file, 1280, 0.72);
+    const previewUrl = URL.createObjectURL(blob);
+    const path = `${current.id}/${itemId}-${Date.now()}.jpg`;
+    const { error: upErr } = await sb.storage.from(PHOTOS_BUCKET).upload(path, blob, { contentType:'image/jpeg' });
+    if(upErr){ showToast('No se pudo subir la foto: '+upErr.message); loadingNote.remove(); return; }
+    const { data: photoRow, error: insErr } = await sb.from('storeaudit_photos')
+      .insert({ audit_id: current.id, item_id: itemId, storage_path: path })
+      .select().single();
+    if(insErr){ showToast('Foto subida pero no se pudo registrar.'); }
+    current.photos[itemId].push({ path, previewUrl });
+    if(strip) strip.innerHTML = current.photos[itemId].map((p,pi)=>`<div class="photo-thumb"><img src="${p.previewUrl}"><button class="x" data-rmphoto="${itemId}:${pi}">✕</button></div>`).join('');
+    document.querySelectorAll(`[data-rmphoto^="${itemId}:"]`).forEach(btn=> btn.onclick = ()=>{
+      const [iid, idx] = btn.dataset.rmphoto.split(':');
+      removePhoto(iid, +idx);
+    });
+  } finally {
+    loadingNote.remove();
+    pendingPhotoItemId = null;
+  }
+});
+function compressLogo(file, maxDim){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxDim){ h = h*(maxDim/w); w = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0,0,w,h);
+        ctx.drawImage(img, 0, 0, w, h);
+        canvas.toBlob(b=> b?resolve(b):reject('no blob'), 'image/png');
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function compressImage(file, maxDim, quality){
+  return new Promise((resolve, reject)=>{
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = ()=>{
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > h && w > maxDim){ h = h*(maxDim/w); w = maxDim; }
+        else if(h > maxDim){ w = w*(maxDim/h); h = maxDim; }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob(b=> b?resolve(b):reject('no blob'), 'image/jpeg', quality);
+      };
+      img.onerror = reject;
+      img.src = reader.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+async function removePhoto(itemId, idx){
+  const p = current.photos[itemId][idx];
+  if(!p) return;
+  current.photos[itemId].splice(idx,1);
+  const strip = document.querySelector(`[data-strip="${itemId}"]`);
+  if(strip) strip.innerHTML = current.photos[itemId].map((ph,pi)=>`<div class="photo-thumb"><img src="${ph.previewUrl}"><button class="x" data-rmphoto="${itemId}:${pi}">✕</button></div>`).join('');
+  document.querySelectorAll(`[data-rmphoto^="${itemId}:"]`).forEach(btn=> btn.onclick = ()=>{
+    const [iid, idx2] = btn.dataset.rmphoto.split(':');
+    removePhoto(iid, +idx2);
+  });
+  await sb.storage.from(PHOTOS_BUCKET).remove([p.path]);
+  await sb.from('storeaudit_photos').delete().eq('audit_id', current.id).eq('item_id', itemId).eq('storage_path', p.path);
+}
+
+/* ---------- signature pad ---------- */
+function setupSignaturePad(canvasId, key){
+  const canvas = document.getElementById(canvasId);
+  const ratio = window.devicePixelRatio || 1;
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width*ratio;
+  canvas.height = 150*ratio;
+  const ctx = canvas.getContext('2d');
+  ctx.scale(ratio,ratio);
+  ctx.strokeStyle = '#2A1B33';
+  ctx.lineWidth = 2.2;
+  ctx.lineCap = 'round';
+  let drawing=false, last=null;
+  sigCanvases[key] = {canvas, ctx, hasContent:false};
+  function pos(e){ const r = canvas.getBoundingClientRect(); const p = e.touches ? e.touches[0] : e; return {x:p.clientX-r.left, y:p.clientY-r.top}; }
+  function start(e){ drawing=true; last=pos(e); e.preventDefault(); }
+  function move(e){ if(!drawing) return; const p = pos(e); ctx.beginPath(); ctx.moveTo(last.x,last.y); ctx.lineTo(p.x,p.y); ctx.stroke(); last=p; sigCanvases[key].hasContent=true; e.preventDefault(); }
+  function end(){ drawing=false; }
+  canvas.addEventListener('mousedown', start);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', start, {passive:false});
+  canvas.addEventListener('touchmove', move, {passive:false});
+  canvas.addEventListener('touchend', end);
+}
+function clearSignature(key){ const s = sigCanvases[key]; if(!s) return; s.ctx.clearRect(0,0,s.canvas.width,s.canvas.height); s.hasContent=false; }
+function getSignatureData(key){ const s = sigCanvases[key]; if(!s || !s.hasContent) return null; return s.canvas.toDataURL('image/png'); }
+
+/* ---------- finalize ---------- */
+async function finalizeAudit(){
+  const btn = document.getElementById('saveAudit');
+  btn.disabled = true; btn.textContent = 'Guardando…';
+  const {pts,max,pct} = computeScore();
+
+  const { error: updErr } = await sb.from('storeaudit_audits').update({
+    store_id: current.store_id, store_name: current.store_name,
+    encargado_name: current.encargado_name, tipo: current.tipo,
+    fecha: current.fecha, hora: current.hora,
+    observaciones: current.observaciones, acciones_corregir: current.acciones_corregir,
+    fecha_mejoras: current.fecha_mejoras, firma_evaluador: current.firma_evaluador,
+    firma_encargado: current.firma_encargado, score_pts: pts, score_max: max, score_pct: pct,
+  }).eq('id', current.id);
+
+  const rows = Object.entries(current.responses).map(([item_id, r])=>({
+    audit_id: current.id, item_id, section_key: r.section_key, prompt: r.prompt,
+    item_type: r.item_type, value: r.value, comentario: r.comentario || null,
+  }));
+  const { error: respErr } = await sb.from('storeaudit_responses').insert(rows);
+
+  btn.disabled = false; btn.textContent = 'Guardar auditoría';
+  if(updErr || respErr){ showToast('Hubo un problema al guardar. Intentá de nuevo.'); return; }
+  showToast('Auditoría guardada.');
+  await loadRecentAudits();
+  openDetail(current.id);
+}
+
+/* ======================= DETAIL VIEW ======================= */
+async function openDetail(id){
+  switchView('view-detail');
+  const host = document.getElementById('detailHost');
+  host.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+
+  const { data: a } = await sb.from('storeaudit_audits').select('*').eq('id', id).single();
+  const { data: responses } = await sb.from('storeaudit_responses').select('*').eq('audit_id', id).order('created_at');
+  const { data: photos } = await sb.from('storeaudit_photos').select('*').eq('audit_id', id);
+
+  let signedMap = {};
+  if(photos && photos.length){
+    const paths = photos.map(p=>p.storage_path);
+    const { data: signed } = await sb.storage.from(PHOTOS_BUCKET).createSignedUrls(paths, 3600);
+    (signed||[]).forEach((s,i)=>{ if(s.signedUrl) signedMap[paths[i]] = s.signedUrl; });
+  }
+
+  const {word,color} = scoreWord(a.score_pct);
+  let html = `
+    <div class="detail-head">
+      <div class="mini-stamp" style="width:60px;height:60px;color:${color}"><b style="font-size:17px;">${a.score_pct}%</b><small>${word}</small></div>
+      <div class="detail-title"><h2>${a.store_name}</h2><p>${a.tipo} · ${fmtDate(a.created_at)}</p></div>
+    </div>
+    <div class="summary-row"><span class="lbl">Evaluador</span><span class="val">${a.evaluador_name||'—'}</span></div>
+    <div class="summary-row"><span class="lbl">Encargado de tienda</span><span class="val">${a.encargado_name||'—'}</span></div>
+    <div class="summary-row"><span class="lbl">Puntaje total</span><span class="val">${a.score_pts} / ${a.score_max} (${a.score_pct}%)</span></div>`;
+
+  const grouped = {};
+  (responses||[]).forEach(r=>{ (grouped[r.section_key] = grouped[r.section_key]||[]).push(r); });
+  const sectionTitleMap = {};
+  sections.forEach(s=> sectionTitleMap[s.key] = s.title);
+
+  Object.entries(grouped).forEach(([key, rows])=>{
+    html += `<div class="detail-section"><h3>${sectionTitleMap[key] || key}</h3>`;
+    rows.forEach(r=>{
+      const itemPhotos = (photos||[]).filter(p=>p.item_id===r.item_id);
+      if(r.item_type==='number'){
+        html += `<div class="detail-item"><div class="dot num">#</div><div class="di-text"><div class="di-q">${r.prompt}</div><div class="di-c">Valor: ${r.value ?? '—'}</div></div></div>`;
+      } else {
+        const v = r.value || 'na';
+        html += `<div class="detail-item">
+          <div class="dot ${v}">${v==='si'?'✓':v==='no'?'✕':'–'}</div>
+          <div class="di-text"><div class="di-q">${r.prompt}</div>${r.comentario?`<div class="di-c">${r.comentario}</div>`:''}
+          ${itemPhotos.length? `<div class="di-photos">${itemPhotos.map(p=>`<img src="${signedMap[p.storage_path]||''}">`).join('')}</div>`:''}
+          </div></div>`;
+      }
+    });
+    html += `</div>`;
+  });
+
+  if(a.observaciones || a.acciones_corregir){
+    html += `<div class="detail-section"><h3>Observaciones</h3><div class="di-text" style="font-size:13.5px;">${(a.observaciones||'—').replace(/\n/g,'<br>')}</div>`;
+    if(a.acciones_corregir){
+      const acc = a.acciones_corregir.split('\n').map(s=>s.trim()).filter(Boolean);
+      html += `<div class="tag-list">${acc.map(x=>`<span class="tag">${x}</span>`).join('')}</div>`;
+    }
+    if(a.fecha_mejoras) html += `<div class="summary-row"><span class="lbl">Fecha para mejoras</span><span class="val">${a.fecha_mejoras}</span></div>`;
+    html += `</div>`;
+  }
+
+  html += `<div class="detail-section"><h3>Firmas</h3><div class="sig-block">
+    <div class="sig-card">${a.firma_evaluador?`<img src="${a.firma_evaluador}">`:'<div style="height:70px;display:flex;align-items:center;justify-content:center;color:#c3b4c8;font-size:12px;">Sin firma</div>'}<div class="name">${a.evaluador_name||'—'}</div><div class="role">Evaluador</div></div>
+    <div class="sig-card">${a.firma_encargado?`<img src="${a.firma_encargado}">`:'<div style="height:70px;display:flex;align-items:center;justify-content:center;color:#c3b4c8;font-size:12px;">Sin firma</div>'}<div class="name">${a.encargado_name||'—'}</div><div class="role">Encargado de tienda</div></div>
+  </div></div>`;
+
+  html += `<div class="share-bar">
+    <button class="btn secondary block" id="btnPdf">Descargar PDF</button>
+    <button class="btn block" id="btnEmailSummary">Enviar por correo</button>
+  </div>`;
+
+  host.innerHTML = html;
+  document.getElementById('btnPdf').onclick = ()=> window.print();
+  document.getElementById('btnEmailSummary').onclick = ()=>{
+    pendingEmailAudit = { audit:a, responses:responses||[] };
+    document.getElementById('emailModal').classList.add('show');
+  };
+}
+
+function buildSummaryText(a, responses){
+  let t = `AUDITORÍA DE TIENDA — ${a.store_name}\n`;
+  t += `${a.tipo} · ${fmtDate(a.created_at)}\n`;
+  t += `Evaluador: ${a.evaluador_name||'—'} · Encargado: ${a.encargado_name||'—'}\n\n`;
+  t += `Calificación total: ${a.score_pts}/${a.score_max} (${a.score_pct}%)\n\n`;
+  const bySec = {};
+  responses.forEach(r=>{ if(r.item_type!=='check') return; (bySec[r.section_key]=bySec[r.section_key]||{p:0,m:0}); if(r.value==='si'){bySec[r.section_key].p+=2;bySec[r.section_key].m+=2;} else if(r.value==='no'){bySec[r.section_key].m+=2;} });
+  Object.entries(bySec).forEach(([key,s])=>{ t += `${key}: ${s.p}/${s.m}\n`; });
+  if(a.acciones_corregir){ t += `\nAcciones a corregir:\n` + a.acciones_corregir.split('\n').filter(Boolean).map(x=>'- '+x).join('\n') + '\n'; }
+  if(a.observaciones) t += `\nObservaciones: ${a.observaciones}\n`;
+  return t;
+}
+document.getElementById('cancelEmail').onclick = ()=> document.getElementById('emailModal').classList.remove('show');
+document.getElementById('sendEmail').onclick = ()=>{
+  const to = document.getElementById('emailTo').value.trim();
+  if(!pendingEmailAudit) return;
+  const {audit:a, responses} = pendingEmailAudit;
+  const subject = encodeURIComponent('Auditoría de tienda — ' + a.store_name + ' — ' + a.fecha);
+  const body = encodeURIComponent(buildSummaryText(a, responses));
+  window.open(`mailto:${encodeURIComponent(to)}?subject=${subject}&body=${body}`, '_blank');
+  document.getElementById('emailModal').classList.remove('show');
+};
+
+/* ======================= CONFIG (master) ======================= */
+document.querySelectorAll('.tab').forEach(tab=>{
+  tab.onclick = ()=>{ configTab = tab.dataset.tab; renderConfig(); };
+});
+
+async function renderConfig(){
+  document.querySelectorAll('.tab').forEach(t=> t.classList.toggle('active', t.dataset.tab===configTab));
+  const host = document.getElementById('configHost');
+  host.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
+
+  if(configTab==='tiendas'){
+    const { data } = await sb.from('storeaudit_stores').select('*').order('country').order('name');
+    let html = `<button class="btn block" id="cfgAddStore" style="margin-top:16px;">+ Agregar tienda</button>`;
+    (data||[]).forEach(s=>{
+      html += `<div class="cfg-row">
+        <div class="main"><div class="t1">${s.name}</div><div class="t2">${s.country}</div></div>
+        <span class="badge ${s.active?'':'inactive'}">${s.active?'Activa':'Inactiva'}</span>
+        <button class="icon-mini" data-togglestore="${s.id}:${s.active}">${s.active?'⏸':'▶'}</button>
+      </div>`;
+    });
+    host.innerHTML = html;
+    document.getElementById('cfgAddStore').onclick = ()=> document.getElementById('storeModal').classList.add('show');
+    host.querySelectorAll('[data-togglestore]').forEach(btn=>{
+      btn.onclick = async ()=>{
+        const [id, act] = btn.dataset.togglestore.split(':');
+        await sb.from('storeaudit_stores').update({ active: act!=='true' }).eq('id', id);
+        await loadStores();
+        renderConfig();
+      };
+    });
+    return;
+  }
+
+  if(configTab==='formulario'){
+    const { data: secs } = await sb.from('storeaudit_sections').select('*').order('sort_order');
+    const { data: items } = await sb.from('storeaudit_items').select('*').order('sort_order');
+    let html = `<button class="btn block" id="cfgAddSection" style="margin-top:16px;">+ Nueva sección</button>`;
+    (secs||[]).forEach(sec=>{
+      const secItems = (items||[]).filter(i=>i.section_id===sec.id);
+      html += `<div class="cfg-section-block">
+        <div class="cfg-row" style="background:transparent;border:none;padding:0;margin:0;">
+          <div class="main"><div class="t1">${sec.title}</div><div class="t2">${sec.subtitle||''}</div></div>
+          <span class="badge ${sec.active?'':'inactive'}">${sec.active?'Activa':'Inactiva'}</span>
+          <button class="icon-mini" data-togglesec="${sec.id}:${sec.active}">${sec.active?'⏸':'▶'}</button>
+        </div>
+        <div style="margin-top:10px;">
+        ${secItems.map(it=>`
+          <div class="cfg-item-row">
+            <input type="text" data-itemtext="${it.id}" value="${(it.prompt||'').replace(/"/g,'&quot;')}">
+            <select data-itemtype="${it.id}"><option value="check" ${it.item_type==='check'?'selected':''}>Sí/No</option><option value="number" ${it.item_type==='number'?'selected':''}>Número</option></select>
+            <button class="icon-mini" data-toggleitem="${it.id}:${it.active}">${it.active?'⏸':'▶'}</button>
+          </div>`).join('')}
+        </div>
+        <div class="cfg-item-row" style="margin-top:6px;">
+          <input type="text" placeholder="Nueva pregunta…" data-newitem="${sec.id}">
+          <select data-newitemtype="${sec.id}"><option value="check">Sí/No</option><option value="number">Número</option></select>
+          <button class="btn sm" data-additem="${sec.id}">Agregar</button>
+        </div>
+      </div>`;
+    });
+    host.innerHTML = html;
+    document.getElementById('cfgAddSection').onclick = ()=> document.getElementById('sectionModal').classList.add('show');
+    host.querySelectorAll('[data-togglesec]').forEach(btn=> btn.onclick = async ()=>{
+      const [id,act] = btn.dataset.togglesec.split(':');
+      await sb.from('storeaudit_sections').update({ active: act!=='true' }).eq('id', id);
+      await loadTemplate(); renderConfig();
+    });
+    host.querySelectorAll('[data-toggleitem]').forEach(btn=> btn.onclick = async ()=>{
+      const [id,act] = btn.dataset.toggleitem.split(':');
+      await sb.from('storeaudit_items').update({ active: act!=='true' }).eq('id', id);
+      await loadTemplate(); renderConfig();
+    });
+    host.querySelectorAll('[data-itemtext]').forEach(inp=>{
+      inp.onblur = async ()=>{ await sb.from('storeaudit_items').update({ prompt: inp.value }).eq('id', inp.dataset.itemtext); await loadTemplate(); };
+    });
+    host.querySelectorAll('[data-itemtype]').forEach(sel=>{
+      sel.onchange = async ()=>{ await sb.from('storeaudit_items').update({ item_type: sel.value }).eq('id', sel.dataset.itemtype); await loadTemplate(); };
+    });
+    host.querySelectorAll('[data-additem]').forEach(btn=>{
+      btn.onclick = async ()=>{
+        const secId = btn.dataset.additem;
+        const input = host.querySelector(`[data-newitem="${secId}"]`);
+        const typeSel = host.querySelector(`[data-newitemtype="${secId}"]`);
+        const prompt = input.value.trim();
+        if(!prompt){ showToast('Escribí la pregunta.'); return; }
+        const { data: existing } = await sb.from('storeaudit_items').select('sort_order').eq('section_id', secId).order('sort_order', {ascending:false}).limit(1);
+        const nextSort = existing && existing[0] ? existing[0].sort_order+1 : 1;
+        await sb.from('storeaudit_items').insert({ section_id: secId, prompt, item_type: typeSel.value, sort_order: nextSort });
+        await loadTemplate();
+        renderConfig();
+        showToast('Pregunta agregada.');
+      };
+    });
+    return;
+  }
+
+  if(configTab==='usuarios'){
+    const { data } = await sb.from('storeaudit_profiles').select('*').order('created_at');
+    allProfilesCache = data || [];
+    let html = `<button class="btn block" id="cfgAddUser" style="margin-top:16px;">+ Agregar usuario</button>`;
+    allProfilesCache.forEach(u=>{
+      html += `<div class="cfg-row">
+        <div class="main"><div class="t1">${u.full_name}</div><div class="t2">${u.email}${u.title?' · '+u.title:''}</div></div>
+        <span class="badge ${u.role}">${u.role==='master'?'Master':'Supervisor'}</span>
+        ${u.id!==session.user.id ? `<button class="icon-mini" data-rolebtn="${u.id}:${u.role}">⇄</button>` : ''}
+      </div>`;
+    });
+    host.innerHTML = html;
+    document.getElementById('cfgAddUser').onclick = ()=> document.getElementById('userModal').classList.add('show');
+    host.querySelectorAll('[data-rolebtn]').forEach(btn=>{
+      btn.onclick = async ()=>{
+        const [id, role] = btn.dataset.rolebtn.split(':');
+        const newRole = role==='master' ? 'supervisor' : 'master';
+        if(!confirm(`¿Cambiar este usuario a ${newRole}?`)) return;
+        try{
+          const { data: { session: s } } = await sb.auth.getSession();
+          const res = await fetch(FN_ADMIN_USERS, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.access_token}, body: JSON.stringify({action:'set_role', target_id:id, role:newRole}) });
+          const j = await res.json();
+          if(j.error){ showToast(j.error); return; }
+          showToast('Rol actualizado.'); renderConfig();
+        }catch(e){ showToast('No se pudo actualizar el rol.'); }
+      };
+    });
+    return;
+  }
+
+  if(configTab==='marca'){
+    if(profile.role!=='master'){ host.innerHTML = '<div class="empty" style="margin-top:16px;">Solo el usuario master puede cambiar la marca.</div>'; return; }
+    host.innerHTML = `<div class="step-card" style="margin-top:16px;">
+      <div class="step-title" style="font-size:17px;">Logo de la empresa</div>
+      <div class="step-sub">Se usa en el encabezado, la pantalla de inicio de sesión y el ícono al instalar la app. Recomendado: PNG con fondo transparente, al menos 400px de ancho.</div>
+      <div style="margin-top:16px; padding:18px; border:1px dashed var(--line); border-radius:12px; text-align:center; background:var(--off);">
+        <img id="logoPreview" src="${logoUrl(Date.now())}" style="max-width:220px; max-height:90px; object-fit:contain;" onerror="this.style.display='none'; document.getElementById('logoPreviewEmpty').classList.remove('hidden');">
+        <div id="logoPreviewEmpty" class="hidden" style="font-size:12.5px; color:#8a7791;">Todavía no se subió ningún logo.</div>
+      </div>
+      <div class="field"><label>Elegir archivo</label><input type="file" id="logoFileInput" accept="image/png,image/svg+xml,image/webp"></div>
+      <div class="step-actions"><button class="btn block" id="btnUploadLogo">Subir logo</button></div>
+      <div id="logoUploadStatus" style="font-size:12.5px; color:#8a7791; margin-top:8px;"></div>
+    </div>`;
+    document.getElementById('btnUploadLogo').onclick = async ()=>{
+      const inp = document.getElementById('logoFileInput');
+      const file = inp.files[0];
+      if(!file){ showToast('Elegí un archivo primero.'); return; }
+      const statusEl = document.getElementById('logoUploadStatus');
+      statusEl.textContent = 'Subiendo…';
+      try{
+        const blob = await compressLogo(file, 800);
+        const { error } = await sb.storage.from(BRANDING_BUCKET).upload(LOGO_PATH, blob, { contentType:'image/png', upsert:true });
+        if(error){ statusEl.textContent = ''; showToast('No se pudo subir: '+error.message); return; }
+        statusEl.textContent = 'Logo actualizado.';
+        showToast('Logo actualizado.');
+        tryApplyLogo();
+        document.getElementById('logoPreview').src = logoUrl(Date.now());
+        document.getElementById('logoPreview').style.display='';
+        document.getElementById('logoPreviewEmpty').classList.add('hidden');
+      }catch(e){ statusEl.textContent=''; showToast('No se pudo procesar la imagen.'); }
+    };
+    return;
+  }
+
+  if(configTab==='perfil'){
+    host.innerHTML = `<div class="step-card" style="margin-top:16px;">
+      <div class="step-title" style="font-size:17px;">Cambiar mi contraseña</div>
+      <div class="field"><label>Nueva contraseña</label><input type="password" id="newPass1"></div>
+      <div class="field"><label>Confirmar contraseña</label><input type="password" id="newPass2"></div>
+      <div class="step-actions"><button class="btn block" id="btnChangePass">Actualizar contraseña</button></div>
+    </div>`;
+    document.getElementById('btnChangePass').onclick = async ()=>{
+      const p1 = document.getElementById('newPass1').value;
+      const p2 = document.getElementById('newPass2').value;
+      if(p1.length<8){ showToast('Mínimo 8 caracteres.'); return; }
+      if(p1!==p2){ showToast('Las contraseñas no coinciden.'); return; }
+      const { error } = await sb.auth.updateUser({ password:p1 });
+      if(error){ showToast('Error: '+error.message); return; }
+      showToast('Contraseña actualizada.');
+      document.getElementById('newPass1').value=''; document.getElementById('newPass2').value='';
+    };
+    return;
+  }
+}
+
+document.getElementById('cancelSection').onclick = ()=> document.getElementById('sectionModal').classList.remove('show');
+document.getElementById('saveSection').onclick = async ()=>{
+  const title = document.getElementById('newSecTitle').value.trim();
+  const sub = document.getElementById('newSecSub').value.trim();
+  if(!title){ showToast('Escribí un título.'); return; }
+  const key = title.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'_').slice(0,40) + '_' + Date.now().toString(36).slice(-4);
+  const { data: existing } = await sb.from('storeaudit_sections').select('sort_order').order('sort_order',{ascending:false}).limit(1);
+  const nextSort = existing && existing[0] ? existing[0].sort_order+1 : 1;
+  const { error } = await sb.from('storeaudit_sections').insert({ key, title, subtitle: sub||null, sort_order: nextSort });
+  if(error){ showToast('No se pudo crear: '+error.message); return; }
+  document.getElementById('newSecTitle').value=''; document.getElementById('newSecSub').value='';
+  document.getElementById('sectionModal').classList.remove('show');
+  await loadTemplate();
+  renderConfig();
+  showToast('Sección creada.');
+};
+
+document.getElementById('cancelUser').onclick = ()=> document.getElementById('userModal').classList.remove('show');
+document.getElementById('saveUser').onclick = async ()=>{
+  const full_name = document.getElementById('newUserName').value.trim();
+  const email = document.getElementById('newUserEmail').value.trim().toLowerCase();
+  const title = document.getElementById('newUserTitle').value.trim();
+  const role = document.getElementById('newUserRole').value;
+  if(!full_name || !email){ showToast('Completá nombre y correo.'); return; }
+  const btn = document.getElementById('saveUser');
+  btn.disabled = true; btn.textContent = 'Creando…';
+  try{
+    const { data: { session: s } } = await sb.auth.getSession();
+    const res = await fetch(FN_ADMIN_USERS, { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+s.access_token}, body: JSON.stringify({action:'create', email, full_name, title, role}) });
+    const j = await res.json();
+    btn.disabled = false; btn.textContent = 'Crear usuario';
+    if(j.error){ showToast(j.error); return; }
+    document.getElementById('userModal').classList.remove('show');
+    document.getElementById('newUserName').value=''; document.getElementById('newUserEmail').value=''; document.getElementById('newUserTitle').value='';
+    renderConfig();
+    alert(`Usuario creado.\n\nCorreo: ${email}\nContraseña temporal: ${j.temp_password}\n\nCompartila por un canal seguro — puede cambiarla luego en "Mi cuenta".`);
+  }catch(e){
+    btn.disabled = false; btn.textContent = 'Crear usuario';
+    showToast('No se pudo crear el usuario.');
+  }
+};
+</script>
+</body>
+</html>
