@@ -95,9 +95,9 @@ a{color:var(--purple);}
   display:flex; align-items:center; justify-content:space-between; gap:10px;
 }
 .brand{display:flex; align-items:center; gap:10px;}
-.brand svg{width:32px; height:32px;}
-.brand-text h1{font-size:15px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; font-family:'Space Grotesk',sans-serif;}
-.brand-text span{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.6);}
+.brand svg{width:40px; height:40px;}
+.brand-text h1{font-size:16px; font-weight:700; text-transform:uppercase; letter-spacing:.04em; color:#fff; font-family:'Space Grotesk',sans-serif;}
+.brand-text span{font-size:12.5px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:rgba(255,255,255,.92);}
 .topbar-actions{display:flex; gap:8px;}
 .icon-btn{
   background:var(--card); border:1px solid var(--line); border-radius:9px;
@@ -213,6 +213,12 @@ a{color:var(--purple);}
   padding:20px 18px 22px; margin-top:14px; box-shadow:0 10px 26px rgba(20,8,30,.16);
 }
 .step-eyebrow{font-size:11.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--granola); font-weight:700;}
+.sec-na-row{
+  display:flex; align-items:center; justify-content:space-between; gap:10px; margin-top:12px; padding:10px 12px;
+  background:var(--purple-soft); border-radius:10px; font-size:12.5px; font-weight:700; color:var(--purple);
+}
+.sec-na-row input{width:18px; height:18px;}
+.item.item-disabled{opacity:.4; pointer-events:none;}
 .step-title{font-size:21px; margin-top:4px; font-style:italic; color:var(--purple);}
 .step-sub{font-size:13px; color:#8a7791; margin-top:4px;}
 
@@ -463,7 +469,7 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
 
   <div class="topbar">
     <div class="brand">
-      <img class="brand-logo-img hidden" alt="Oakberry" style="max-width:120px; max-height:32px; object-fit:contain;">
+      <img class="brand-logo-img hidden" alt="Oakberry" style="max-width:140px; max-height:40px; object-fit:contain;">
       <svg class="brand-logo-fallback" viewBox="0 0 100 100"><path fill="#3A1A52" d="M55 8c-4 0-7 3-9 6-9 2-17 9-21 18-3 1-6 3-8 6 3 0 5 0 7 1-2 4-3 9-3 14 0 16 13 28 29 28h34V71H62c8-3 14-10 16-19 2 1 4 1 6 0-2-3-5-5-8-6-1-9-8-17-17-21-1-8-2-14-4-17z"/><circle cx="63" cy="30" r="4" fill="#F5EEE0"/></svg>
       <div class="brand-text">
         <h1 class="brand-logo-fallback">Oakberry QA</h1>
@@ -753,7 +759,7 @@ function saveDraft(){
     id: current.id, store_id: current.store_id, store_name: current.store_name,
     evaluador_name: current.evaluador_name, encargado_name: current.encargado_name,
     tipo: current.tipo, fecha: current.fecha, hora: current.hora,
-    responses: current.responses,
+    responses: current.responses, sectionNA: current.sectionNA||{},
     observaciones: current.observaciones, acciones_corregir: current.acciones_corregir,
     fecha_mejoras: current.fecha_mejoras,
     firma_evaluador: current.firma_evaluador, firma_encargado: current.firma_encargado,
@@ -803,7 +809,7 @@ async function resumeDraft(id){
     id: d.id, inserted: true, store_id: d.store_id, store_name: d.store_name,
     evaluador_name: d.evaluador_name, encargado_name: d.encargado_name||'',
     tipo: d.tipo, fecha: d.fecha, hora: d.hora,
-    responses: d.responses, photos: {},
+    responses: d.responses, sectionNA: d.sectionNA||{}, photos: {},
     observaciones: d.observaciones||'', acciones_corregir: d.acciones_corregir||'', fecha_mejoras: d.fecha_mejoras||'',
     firma_evaluador: d.firma_evaluador||null, firma_encargado: d.firma_encargado||null,
   };
@@ -941,17 +947,19 @@ function renderDashboard(){
 function renderDashKpis(){
   const host = document.getElementById('dashKpis');
   if(!host) return;
+  const countryStores = stores.filter(s=>s.country===selectedCountry);
+  const countryStoreNames = new Set(countryStores.map(s=>s.name));
   const lastByStore = {};
-  audits.forEach(a=>{ if(!lastByStore[a.store_name]) lastByStore[a.store_name] = a; }); // audits already sorted desc
+  audits.filter(a=>countryStoreNames.has(a.store_name)).forEach(a=>{ if(!lastByStore[a.store_name]) lastByStore[a.store_name] = a; }); // audits already sorted desc
   const withScore = Object.values(lastByStore);
   const avg = withScore.length ? Math.round(withScore.reduce((s,a)=>s+a.score_pct,0)/withScore.length) : 0;
   const now = new Date();
-  const thisMonthStores = new Set(audits.filter(a=>{ const d=new Date(a.created_at); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).map(a=>a.store_name));
-  const pending = stores.length - Object.keys(lastByStore).length;
+  const thisMonthStores = new Set(audits.filter(a=> countryStoreNames.has(a.store_name) && (()=>{ const d=new Date(a.created_at); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); })()).map(a=>a.store_name));
+  const pending = countryStores.length - Object.keys(lastByStore).length;
   host.innerHTML = `
     <div class="kpi-card anim-pop" style="animation-delay:.02s">
       <div class="kpi-chip c-purple"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
-      <div class="num" data-count="${stores.length}">0</div><div class="lbl">Tiendas activas</div>
+      <div class="num" data-count="${countryStores.length}">0</div><div class="lbl">Tiendas activas${selectedCountry?' · '+selectedCountry:''}</div>
     </div>
     <div class="kpi-card anim-pop" style="animation-delay:.08s">
       <div class="kpi-chip c-celeste"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
@@ -1377,6 +1385,7 @@ document.getElementById('btnNewAudit').onclick = ()=>{
     fecha: new Date().toISOString().slice(0,10),
     hora: new Date().toTimeString().slice(0,5),
     responses: {},   // item_id -> {value, comentario, section_key, prompt, item_type, sort:section_sort}
+    sectionNA: {},   // section_key -> true if marked "no aplica" entirely
     photos: {},      // item_id -> [{path, previewUrl}]
     observaciones: '',
     acciones_corregir: '',
@@ -1461,7 +1470,11 @@ function renderStep(){
       <div class="step-eyebrow">Sección ${sections.indexOf(sec)+1} de ${sections.length}</div>
       <div class="step-title">${sec.title}</div>
       <div class="step-sub">${sec.subtitle||''}</div>
-      ${sec.items.map((it,i)=> renderItemHTML(it,i)).join('')}
+      <div class="sec-na-row">
+        <span>Esta sección no aplica a esta tienda</span>
+        <input type="checkbox" id="secNaToggle" ${current.sectionNA[sec.key]?'checked':''}>
+      </div>
+      <div id="secItemsHost">${sec.items.map((it,i)=> renderItemHTML(it,i)).join('')}</div>
       <div class="section-score" id="secScore"></div>
       <div class="step-actions">
         <button class="btn secondary block" id="prevSec">Atrás</button>
@@ -1470,6 +1483,20 @@ function renderStep(){
     </div>`;
     wireItems(sec.items);
     updateSecScore(sec);
+    applySecNaState(sec);
+    document.getElementById('secNaToggle').onchange = (e)=>{
+      current.sectionNA[sec.key] = e.target.checked;
+      sec.items.forEach(it=>{
+        const r = current.responses[it.id];
+        if(e.target.checked) r.value = 'na';
+        else if(r.value==='na') r.value = null;
+      });
+      document.getElementById('secItemsHost').innerHTML = sec.items.map((it,i)=> renderItemHTML(it,i)).join('');
+      wireItems(sec.items);
+      applySecNaState(sec);
+      updateSecScore(sec);
+      saveDraft();
+    };
     document.getElementById('prevSec').onclick = ()=> goStep(stepIndex-1);
     document.getElementById('nextSec').onclick = ()=> goStep(stepIndex+1);
     return;
@@ -1611,6 +1638,11 @@ function wireItems(items){
   });
 }
 
+function applySecNaState(sec){
+  const host = document.getElementById('secItemsHost');
+  if(!host) return;
+  host.querySelectorAll('.item').forEach(el=> el.classList.toggle('item-disabled', !!current.sectionNA[sec.key]));
+}
 function updateSecScore(sec){
   const el = document.getElementById('secScore');
   if(!el) return;
@@ -1624,12 +1656,22 @@ function updateSecScore(sec){
 }
 
 function computeScore(){
-  let pts=0,max=0;
-  Object.values(current.responses).forEach(r=>{
-    if(r.item_type!=='check') return;
-    if(r.value==='si'){pts+=2;max+=2;} else if(r.value==='no'){max+=2;}
+  let pts=0, max=0, weightedSum=0, weightUsed=0;
+  sections.forEach(sec=>{
+    let sPts=0, sMax=0;
+    sec.items.forEach(it=>{
+      if(it.item_type!=='check') return;
+      const v = current.responses[it.id].value;
+      if(v==='si'){sPts+=2; sMax+=2;} else if(v==='no'){sMax+=2;}
+    });
+    pts += sPts; max += sMax;
+    if(sMax>0){
+      const w = sec.weight || 0;
+      weightedSum += w * (sPts/sMax);
+      weightUsed += w;
+    }
   });
-  const pct = max>0 ? Math.round((pts/max)*100) : 0;
+  const pct = weightUsed>0 ? Math.round((weightedSum/weightUsed)*100) : 0;
   return {pts,max,pct};
 }
 
