@@ -439,11 +439,13 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
 }
 
 /* print / PDF */
+.print-logo{display:none;}
 @media print{
   body *{visibility:hidden;}
   #view-detail, #view-detail *{visibility:visible;}
   #view-detail{position:absolute; left:0; top:0; width:100%; padding:0 12px;}
-  .share-bar, .topbar, #btnBackFromDetail{display:none !important;}
+  .share-bar, .topbar, #btnBackFromDetail, #btnDeleteFromDetail, .detail-head .mini-stamp{display:none !important;}
+  .print-logo{display:block; max-height:56px; max-width:220px; margin:0 auto 16px; object-fit:contain;}
 }
 </style>
 </head>
@@ -1895,15 +1897,25 @@ async function openDetail(id){
     (signed||[]).forEach((s,i)=>{ if(s.signedUrl) signedMap[paths[i]] = s.signedUrl; });
   }
 
+  const { data: nextSched } = await sb.from('storeaudit_schedule').select('*')
+    .eq('store_id', a.store_id).eq('status', 'pending')
+    .order('planned_date', {ascending:true}).limit(1);
+  const nextAudit = nextSched && nextSched[0];
+
   const {word,color} = scoreWord(a.score_pct);
+  const nextText = nextAudit
+    ? new Date(nextAudit.planned_date+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'long',year:'numeric'}) + ' · ' + nextAudit.tipo
+    : 'No hay ninguna agendada';
   let html = `
+    <img class="print-logo" src="${logoUrl()}" alt="Oakberry">
     <div class="detail-head">
       <div class="mini-stamp" style="width:60px;height:60px;color:${color}"><b style="font-size:17px;">${a.score_pct}%</b><small>${word}</small></div>
       <div class="detail-title"><h2>${a.store_name}</h2><p>${a.tipo} · ${fmtDate(a.created_at)}</p></div>
     </div>
     <div class="summary-row"><span class="lbl">Evaluador</span><span class="val">${a.evaluador_name||'—'}</span></div>
     <div class="summary-row"><span class="lbl">Encargado de tienda</span><span class="val">${a.encargado_name||'—'}</span></div>
-    <div class="summary-row"><span class="lbl">Puntaje total</span><span class="val">${a.score_pts} / ${a.score_max} (${a.score_pct}%)</span></div>`;
+    <div class="summary-row"><span class="lbl">Puntaje total</span><span class="val">${a.score_pts} / ${a.score_max} (${a.score_pct}%)</span></div>
+    <div class="summary-row"><span class="lbl">Próxima auditoría</span><span class="val">${nextText}</span></div>`;
 
   const grouped = {};
   (responses||[]).forEach(r=>{ (grouped[r.section_key] = grouped[r.section_key]||[]).push(r); });
@@ -1928,13 +1940,16 @@ async function openDetail(id){
     html += `</div>`;
   });
 
-  if(a.observaciones || a.acciones_corregir){
-    html += `<div class="detail-section"><h3>Observaciones</h3><div class="di-text" style="font-size:13.5px;">${(a.observaciones||'—').replace(/\n/g,'<br>')}</div>`;
-    if(a.acciones_corregir){
-      const acc = a.acciones_corregir.split('\n').map(s=>s.trim()).filter(Boolean);
+  {
+    html += `<div class="detail-section"><h3>Observaciones</h3><div class="di-text" style="font-size:13.5px;">${(a.observaciones||'Sin observaciones registradas.').replace(/\n/g,'<br>')}</div>`;
+    html += `<div style="margin-top:14px; font-size:12.5px; font-weight:700; color:#6b5d72; text-transform:uppercase; letter-spacing:.04em;">Plan de acción</div>`;
+    const acc = (a.acciones_corregir||'').split('\n').map(s=>s.trim()).filter(Boolean);
+    if(acc.length){
       html += `<div class="tag-list">${acc.map(x=>`<span class="tag">${x}</span>`).join('')}</div>`;
+    } else {
+      html += `<div class="di-c" style="margin-top:4px;">Sin acciones pendientes registradas.</div>`;
     }
-    if(a.fecha_mejoras) html += `<div class="summary-row"><span class="lbl">Fecha para mejoras</span><span class="val">${a.fecha_mejoras}</span></div>`;
+    if(a.fecha_mejoras) html += `<div class="summary-row"><span class="lbl">Fecha límite para mejoras</span><span class="val">${a.fecha_mejoras}</span></div>`;
     html += `</div>`;
   }
 
