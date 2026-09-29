@@ -300,9 +300,14 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
 
 /* reports */
 .kpi-row{display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-top:14px;}
-.kpi-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:var(--shadow);}
-.kpi-card .num{font-size:24px; font-weight:700; color:var(--purple); font-family:'Oswald',sans-serif;}
-.kpi-card .lbl{font-size:11.5px; color:#8a7791; margin-top:2px; text-transform:uppercase; letter-spacing:.03em;}
+.kpi-card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 8px 22px rgba(20,8,30,.16);}
+.kpi-card .num{font-size:26px; font-weight:700; color:var(--purple); font-family:'Oswald',sans-serif;}
+.kpi-card .lbl{font-size:11.5px; color:#8a7791; margin-top:3px; text-transform:uppercase; letter-spacing:.03em; font-weight:700;}
+.kpi-chip{width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; margin-bottom:10px; color:#fff; box-shadow:0 4px 10px rgba(0,0,0,.15);}
+.kpi-chip.c-purple{background:var(--purple);}
+.kpi-chip.c-celeste{background:var(--celeste); color:#123;}
+.kpi-chip.c-granola{background:var(--granola);}
+.kpi-chip.c-red{background:var(--red);}
 .report-section{margin-top:24px;}
 .report-section h3{font-size:15.5px; font-weight:700; color:#fff; margin-bottom:10px;}
 #storeDetailPanel{background:var(--card); border-radius:16px; padding:16px; box-shadow:0 10px 30px rgba(20,8,30,.2);}
@@ -442,11 +447,11 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
       </div>
     </div>
     <div class="topbar-actions">
-      <button class="icon-btn" id="btnReports" title="Reportes">📊</button>
-      <button class="icon-btn" id="btnConfig" title="Configuración">⚙</button>
-      <button class="icon-btn" id="btnHistoryAll" title="Historial">☰</button>
-      <button class="icon-btn" id="btnHome" title="Inicio">⌂</button>
-      <button class="icon-btn" id="btnLogout" title="Salir">⏻</button>
+      <button class="icon-btn" id="btnReports" title="Reportes"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>
+      <button class="icon-btn" id="btnConfig" title="Configuración"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
+      <button class="icon-btn" id="btnHistoryAll" title="Historial"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
+      <button class="icon-btn" id="btnHome" title="Inicio"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7"/><path d="M9 22V12h6v10"/></svg></button>
+      <button class="icon-btn" id="btnLogout" title="Salir"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18.36 6.64a9 9 0 1 1-12.73 0"/><line x1="12" y1="2" x2="12" y2="12"/></svg></button>
     </div>
   </div>
 
@@ -456,6 +461,7 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
       <h2>Inspecciones de tienda</h2>
       <p>Revisá el estado operativo, de limpieza, seguridad y financiero de cada tienda, con evidencia fotográfica y firma digital.</p>
     </div>
+    <div class="kpi-row" id="dashKpis"></div>
     <div class="country-toggle" id="countryToggle"></div>
     <div class="store-grid" id="storeRow"></div>
     <button class="btn block" id="btnNewAudit" style="margin-top:16px;">+ Nueva auditoría</button>
@@ -794,6 +800,8 @@ function renderDashboard(){
   };
   row.appendChild(addTile);
 
+  renderDashKpis();
+
   const list = document.getElementById('recentList');
   const filtered = (historyFilterStore ? audits.filter(a=>a.store_name===historyFilterStore) : audits).slice(0,6);
   document.getElementById('recentLabel').textContent = historyFilterStore ? ('Auditorías · ' + historyFilterStore) : 'Auditorías recientes';
@@ -803,6 +811,35 @@ function renderDashboard(){
     return;
   }
   filtered.forEach((a,i)=> list.appendChild(auditCard(a,i)));
+}
+function renderDashKpis(){
+  const host = document.getElementById('dashKpis');
+  if(!host) return;
+  const lastByStore = {};
+  audits.forEach(a=>{ if(!lastByStore[a.store_name]) lastByStore[a.store_name] = a; }); // audits already sorted desc
+  const withScore = Object.values(lastByStore);
+  const avg = withScore.length ? Math.round(withScore.reduce((s,a)=>s+a.score_pct,0)/withScore.length) : 0;
+  const now = new Date();
+  const thisMonthStores = new Set(audits.filter(a=>{ const d=new Date(a.created_at); return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear(); }).map(a=>a.store_name));
+  const pending = stores.length - Object.keys(lastByStore).length;
+  host.innerHTML = `
+    <div class="kpi-card anim-pop" style="animation-delay:.02s">
+      <div class="kpi-chip c-purple"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+      <div class="num" data-count="${stores.length}">0</div><div class="lbl">Tiendas activas</div>
+    </div>
+    <div class="kpi-card anim-pop" style="animation-delay:.08s">
+      <div class="kpi-chip c-celeste"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg></div>
+      <div class="num" data-count="${avg}" data-suffix="%">0</div><div class="lbl">Promedio general</div>
+    </div>
+    <div class="kpi-card anim-pop" style="animation-delay:.14s">
+      <div class="kpi-chip c-granola"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
+      <div class="num" data-count="${thisMonthStores.size}">0</div><div class="lbl">Auditadas este mes</div>
+    </div>
+    <div class="kpi-card anim-pop" style="animation-delay:.2s">
+      <div class="kpi-chip c-red"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg></div>
+      <div class="num" data-count="${Math.max(pending,0)}">0</div><div class="lbl">Pendientes</div>
+    </div>`;
+  animateCounts(host);
 }
 function auditCard(a, idx){
   const {word,color} = scoreWord(a.score_pct);
