@@ -887,7 +887,10 @@ async function boot(){
   }
   profile = data;
   document.getElementById('userLabel').textContent = profile.full_name + (profile.role==='master' ? ' · Master' : (profile.title ? ' · '+profile.title : ''));
-  document.getElementById('btnConfig').style.display = profile.role==='master' ? 'flex' : 'none';
+  if(profile.role!=='master'){
+    document.querySelectorAll('#configTabs .tab:not([data-tab="perfil"])').forEach(t=> t.classList.add('hidden'));
+    configTab = 'perfil';
+  }
   await Promise.all([loadStores(), loadTemplate()]);
   switchView('view-dashboard');
   renderDashboard();
