@@ -392,6 +392,23 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
 .report-tab{padding:8px 13px; border-radius:100px; border:1px solid var(--line); background:var(--card); font-size:12.5px; font-weight:600; color:#6b5d72;}
 .report-tab.active{background:var(--purple); color:#fff; border-color:var(--purple);}
 
+/* planner */
+.planner-nav{display:flex; align-items:center; justify-content:space-between; margin-top:14px;}
+.planner-nav button{background:var(--card); border:none; border-radius:8px; width:34px; height:34px; font-size:17px; color:var(--purple); box-shadow:0 4px 10px rgba(20,8,30,.14);}
+.planner-nav .month-label{font-weight:700; color:#fff; font-size:14.5px; text-transform:capitalize;}
+.planner-cal{display:grid; grid-template-columns:repeat(7,1fr); gap:4px; margin-top:12px;}
+.cal-dow{font-size:10px; font-weight:700; text-align:center; color:rgba(255,255,255,.5); text-transform:uppercase; padding-bottom:4px;}
+.planner-day{
+  aspect-ratio:1; border-radius:9px; background:var(--card); border:1px solid var(--line);
+  display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700; color:var(--ink);
+  position:relative;
+}
+.planner-day.empty{background:transparent; border:none;}
+.planner-day.today{border-color:var(--celeste); border-width:2px;}
+.planner-day.selected{background:var(--purple); color:#fff; border-color:var(--purple);}
+.planner-day .dot{position:absolute; bottom:4px; width:5px; height:5px; border-radius:50%; background:var(--granola);}
+.planner-day.selected .dot{background:#fff;}
+
 /* config / admin */
 .tabs{display:flex; gap:6px; margin-top:14px; border-bottom:1px solid rgba(255,255,255,.2);}
 .tab{padding:10px 14px; font-size:13px; font-weight:700; color:rgba(255,255,255,.55); border-bottom:2px solid transparent;}
@@ -480,6 +497,7 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
       </div>
     </div>
     <div class="topbar-actions">
+      <button class="icon-btn" id="btnPlanner" title="Planificador"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>
       <button class="icon-btn" id="btnReports" title="Reportes"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></button>
       <button class="icon-btn" id="btnConfig" title="Configuración"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></button>
       <button class="icon-btn" id="btnHistoryAll" title="Historial"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></button>
@@ -539,6 +557,23 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
       </button>
     </div>
     <div id="detailHost"><div class="spinner-wrap"><div class="spinner"></div></div></div>
+  </div>
+
+  <!-- ============ PLANNER ============ -->
+  <div class="view" id="view-planner">
+    <div class="hero" style="padding-bottom:0;">
+      <h2>Planificador</h2>
+      <p>Calendario de auditorías agendadas, por país.</p>
+    </div>
+    <div class="country-toggle" id="plannerCountryToggle"></div>
+    <div class="planner-nav">
+      <button id="plannerPrevMonth">‹</button>
+      <div class="month-label" id="plannerMonthLabel"></div>
+      <button id="plannerNextMonth">›</button>
+    </div>
+    <div class="planner-cal" id="plannerCal"></div>
+    <div class="section-label" id="plannerDayLabel">Próximas auditorías</div>
+    <div id="plannerDayList"><div class="spinner-wrap"><div class="spinner"></div></div></div>
   </div>
 
   <!-- ============ REPORTS ============ -->
@@ -1202,6 +1237,101 @@ function animateCounts(scope){
   });
 }
 
+/* ======================= PLANNER ======================= */
+let plannerCountry = null;
+let plannerMonth = new Date(); plannerMonth.setDate(1);
+let plannerSelectedDate = null;
+let plannerSchedule = [];
+
+document.getElementById('btnPlanner').onclick = ()=>{ switchView('view-planner'); renderPlanner(); };
+document.getElementById('plannerPrevMonth').onclick = ()=>{ plannerMonth.setMonth(plannerMonth.getMonth()-1); plannerSelectedDate=null; renderPlannerCalendar(); renderPlannerDayList(); };
+document.getElementById('plannerNextMonth').onclick = ()=>{ plannerMonth.setMonth(plannerMonth.getMonth()+1); plannerSelectedDate=null; renderPlannerCalendar(); renderPlannerDayList(); };
+
+async function renderPlanner(){
+  const countries = [...new Set(stores.map(s=>s.country))];
+  if(!plannerCountry || !countries.includes(plannerCountry)) plannerCountry = countries[0] || null;
+  const toggle = document.getElementById('plannerCountryToggle');
+  toggle.innerHTML = '';
+  countries.forEach(country=>{
+    const btn = document.createElement('div');
+    btn.className = 'country-btn' + (plannerCountry===country?' active':'');
+    btn.textContent = country;
+    btn.onclick = ()=>{ plannerCountry = country; plannerSelectedDate=null; renderPlanner(); };
+    toggle.appendChild(btn);
+  });
+
+  const { data } = await sb.from('storeaudit_schedule').select('*').eq('status','pending').order('planned_date',{ascending:true}).limit(500);
+  const countryStoreIds = new Set(stores.filter(s=>s.country===plannerCountry).map(s=>s.id));
+  plannerSchedule = (data||[]).filter(sc=> countryStoreIds.has(sc.store_id));
+
+  renderPlannerCalendar();
+  renderPlannerDayList();
+}
+
+function renderPlannerCalendar(){
+  document.getElementById('plannerMonthLabel').textContent = plannerMonth.toLocaleDateString('es-CR',{month:'long', year:'numeric'});
+  const cal = document.getElementById('plannerCal');
+  cal.innerHTML = '';
+  ['D','L','M','M','J','V','S'].forEach(d=>{
+    const el = document.createElement('div'); el.className='cal-dow'; el.textContent=d; cal.appendChild(el);
+  });
+  const year = plannerMonth.getFullYear(), month = plannerMonth.getMonth();
+  const firstDow = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month+1, 0).getDate();
+  const todayStr = new Date().toISOString().slice(0,10);
+  for(let i=0;i<firstDow;i++){ const el=document.createElement('div'); el.className='planner-day empty'; cal.appendChild(el); }
+  for(let d=1; d<=daysInMonth; d++){
+    const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const count = plannerSchedule.filter(sc=>sc.planned_date===dateStr).length;
+    const el = document.createElement('div');
+    el.className = 'planner-day' + (dateStr===todayStr?' today':'') + (dateStr===plannerSelectedDate?' selected':'');
+    el.innerHTML = `${d}` + (count? `<div class="dot"></div>`:'');
+    el.onclick = ()=>{ plannerSelectedDate = (plannerSelectedDate===dateStr) ? null : dateStr; renderPlannerCalendar(); renderPlannerDayList(); };
+    cal.appendChild(el);
+  }
+}
+
+function renderPlannerDayList(){
+  const label = document.getElementById('plannerDayLabel');
+  const list = document.getElementById('plannerDayList');
+  const rows = plannerSelectedDate ? plannerSchedule.filter(sc=>sc.planned_date===plannerSelectedDate) : plannerSchedule;
+  label.textContent = plannerSelectedDate
+    ? 'Auditorías · ' + new Date(plannerSelectedDate+'T00:00:00').toLocaleDateString('es-CR',{day:'2-digit',month:'long'})
+    : `Próximas auditorías en ${plannerCountry||''}`;
+  list.innerHTML = '';
+  if(rows.length===0){
+    const empty = document.createElement('div');
+    empty.className = 'empty';
+    empty.textContent = 'No hay auditorías agendadas' + (plannerSelectedDate?' para este día.':' en ' + (plannerCountry||'') + '.');
+    list.appendChild(empty);
+  }
+  rows.forEach(sc=>{
+    const d = new Date(sc.planned_date+'T00:00:00');
+    const day = d.getDate();
+    const month = d.toLocaleDateString('es-CR',{month:'short'}).replace('.','');
+    const row = document.createElement('div');
+    row.className = 'sched-row anim-rise';
+    row.innerHTML = `<div class="sched-date"><div class="d">${day}</div><div class="m">${month}</div></div>
+      <div class="sched-main"><div class="t1">${sc.store_name}</div><div class="t2">${sc.tipo}${sc.notes?' · '+sc.notes:''}</div></div>
+      ${profile.role==='master'? `<button class="icon-mini" data-plannercomplete="${sc.id}" title="Marcar completada">✓</button><button class="icon-mini" data-plannerdelete="${sc.id}" title="Eliminar">✕</button>` : ''}`;
+    list.appendChild(row);
+  });
+  if(profile.role==='master'){
+    const addBtn = document.createElement('button');
+    addBtn.className = 'btn block';
+    addBtn.textContent = '+ Agendar auditoría' + (plannerSelectedDate? ' para este día':'');
+    addBtn.style.marginTop = '10px';
+    addBtn.onclick = ()=> openScheduleModal(plannerSelectedDate, ()=>{ renderPlanner(); }, plannerCountry);
+    list.appendChild(addBtn);
+  }
+  list.querySelectorAll('[data-plannercomplete]').forEach(btn=>{
+    btn.onclick = async ()=>{ await sb.from('storeaudit_schedule').update({status:'completed'}).eq('id', btn.dataset.plannercomplete); showToast('Marcada como completada.'); renderPlanner(); };
+  });
+  list.querySelectorAll('[data-plannerdelete]').forEach(btn=>{
+    btn.onclick = async ()=>{ if(!confirm('¿Eliminar esta auditoría agendada?')) return; await sb.from('storeaudit_schedule').delete().eq('id', btn.dataset.plannerdelete); renderPlanner(); };
+  });
+}
+
 /* ======================= REPORTS ======================= */
 const OVERDUE_DAYS = 45;
 let reportsCache = null;
@@ -1333,7 +1463,7 @@ function renderReportsBody(){
     row.onclick = ()=> renderStoreDetail(row.dataset.storedetail);
   });
   const addSchedBtn = document.getElementById('btnAddSchedule');
-  if(addSchedBtn) addSchedBtn.onclick = openScheduleModal;
+  if(addSchedBtn) addSchedBtn.onclick = ()=> openScheduleModal(null, renderReports, null);
   host.querySelectorAll('[data-schedcomplete]').forEach(btn=>{
     btn.onclick = async ()=>{ await sb.from('storeaudit_schedule').update({status:'completed'}).eq('id', btn.dataset.schedcomplete); showToast('Marcada como completada.'); renderReports(); };
   });
@@ -1378,12 +1508,14 @@ function renderStoreDetail(storeName){
   document.getElementById('closeStoreDetail').onclick = ()=> panel.classList.add('hidden');
 }
 
-function openScheduleModal(){
+let scheduleModalReturnFn = renderReports;
+function openScheduleModal(prefillDate, returnFn, prefillCountry){
   const sel = document.getElementById('schedStore');
   sel.innerHTML = [...new Set(stores.map(s=>s.country))].map(country=>`
-    <optgroup label="${country}">${stores.filter(s=>s.country===country).map(s=>`<option value="${s.id}">${s.name}</option>`).join('')}</optgroup>`).join('');
-  document.getElementById('schedDate').value = '';
+    <optgroup label="${country}">${stores.filter(s=>s.country===country).map(s=>`<option value="${s.id}" ${prefillCountry===country && stores.filter(x=>x.country===country)[0]?.id===s.id?'selected':''}>${s.name}</option>`).join('')}</optgroup>`).join('');
+  document.getElementById('schedDate').value = prefillDate || '';
   document.getElementById('schedNotes').value = '';
+  scheduleModalReturnFn = returnFn || renderReports;
   document.getElementById('scheduleModal').classList.add('show');
 }
 document.getElementById('cancelSchedule').onclick = ()=> document.getElementById('scheduleModal').classList.remove('show');
@@ -1398,7 +1530,7 @@ document.getElementById('saveSchedule').onclick = async ()=>{
   if(error){ showToast('No se pudo agendar: '+error.message); return; }
   document.getElementById('scheduleModal').classList.remove('show');
   showToast('Auditoría agendada.');
-  renderReports();
+  scheduleModalReturnFn();
 };
 
 /* ======================= NEW AUDIT FLOW ======================= */
