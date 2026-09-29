@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Oakberry QA — Auditorías</title>
 <meta name="theme-color" content="#3A1A52">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -520,7 +523,12 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
 
   <!-- ============ DETAIL ============ -->
   <div class="view" id="view-detail">
-    <button class="btn ghost" id="btnBackFromDetail">← Volver</button>
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn ghost" id="btnBackFromDetail">← Volver</button>
+      <button class="icon-btn" id="btnDeleteFromDetail" title="Mover al basurero" style="background:var(--red); color:#fff; border-color:var(--red);">
+        <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>
+      </button>
+    </div>
     <div id="detailHost"><div class="spinner-wrap"><div class="spinner"></div></div></div>
   </div>
 
@@ -928,7 +936,7 @@ function renderDashboard(){
     list.innerHTML = '<div class="empty">Aún no hay auditorías guardadas' + (historyFilterStore?(' para '+historyFilterStore):'') + '.</div>';
     return;
   }
-  filtered.forEach((a,i)=> list.appendChild(auditCard(a,i)));
+  filtered.forEach((a,i)=> list.appendChild(buildSwipeCard(a,i,'activas', loadRecentAudits)));
 }
 function renderDashKpis(){
   const host = document.getElementById('dashKpis');
@@ -1042,7 +1050,8 @@ async function renderHistory(){
   rows.forEach((a,i)=> list.appendChild(buildSwipeCard(a, i, historyTab)));
 }
 
-function buildSwipeCard(a, idx, tab){
+function buildSwipeCard(a, idx, tab, onDone){
+  onDone = onDone || renderHistory;
   const wrap = document.createElement('div');
   wrap.className = 'swipe-item';
   const actions = document.createElement('div');
@@ -1068,7 +1077,7 @@ function buildSwipeCard(a, idx, tab){
       else if(act==='untrash'){ await restoreFromTrash(a.id); showToast('Auditoría restaurada.'); }
       else if(act==='trash'){ if(!confirm('¿Mover esta auditoría al basurero?')) return; await trashAudit(a.id); showToast('Movida al basurero.'); }
       else if(act==='purge'){ if(!confirm('¿Eliminar esta auditoría permanentemente? No se puede deshacer.')) return; await purgeAuditPermanently(a.id); }
-      renderHistory();
+      onDone();
     };
   });
   return wrap;
@@ -1772,7 +1781,16 @@ async function finalizeAudit(){
 }
 
 /* ======================= DETAIL VIEW ======================= */
+let currentDetailAuditId = null;
+document.getElementById('btnDeleteFromDetail').onclick = async ()=>{
+  if(!currentDetailAuditId) return;
+  if(!confirm('¿Mover esta auditoría al basurero? Podés restaurarla luego desde Historial → Basurero.')) return;
+  await trashAudit(currentDetailAuditId);
+  showToast('Movida al basurero.');
+  switchView('view-dashboard'); renderDashboard(); loadRecentAudits();
+};
 async function openDetail(id){
+  currentDetailAuditId = id;
   switchView('view-detail');
   const host = document.getElementById('detailHost');
   host.innerHTML = '<div class="spinner-wrap"><div class="spinner"></div></div>';
