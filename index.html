@@ -173,6 +173,14 @@ a{color:var(--purple);}
 .audit-card-info .t1{font-weight:700; font-size:14.5px;}
 .audit-card-info .t2{font-size:12.5px; color:#8a7791; margin-top:2px;}
 .chev{color:#c3b4c8; font-size:18px;}
+.draft-card{
+  display:flex; align-items:center; gap:10px; background:var(--card); border:1px solid var(--line);
+  border-left:5px solid var(--granola); border-radius:12px; padding:12px 14px; margin-top:8px;
+  box-shadow:0 6px 16px rgba(20,8,30,.12);
+}
+.draft-card .draft-main{flex:1; min-width:0;}
+.draft-card .draft-main .t1{font-weight:700; font-size:14px;}
+.draft-card .draft-main .t2{font-size:12px; color:#8a7791; margin-top:2px;}
 .empty{
   border:1px dashed rgba(255,255,255,.3); border-radius:14px; padding:26px 18px; text-align:center;
   color:rgba(255,255,255,.6); font-size:13.5px; background:rgba(255,255,255,.05);
@@ -471,6 +479,10 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
     <div class="country-toggle" id="countryToggle"></div>
     <div class="store-select-row" id="storeRow"></div>
     <button class="btn block" id="btnNewAudit" style="margin-top:16px;">+ Nueva auditoría</button>
+    <div id="draftsSection" class="hidden">
+      <div class="section-label">Borradores</div>
+      <div id="draftsList"></div>
+    </div>
     <div class="section-label" id="recentLabel">Auditorías recientes</div>
     <div id="recentList"><div class="spinner-wrap"><div class="spinner"></div></div></div>
   </div>
@@ -480,6 +492,7 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
     <div class="progress-wrap">
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-meta"><span id="progressLabel">Paso 1</span><span id="progressPct">0%</span></div>
+      <button class="btn ghost sm" id="btnSaveDraftExit" style="margin-top:4px; padding:6px 2px; color:rgba(255,255,255,.75);">💾 Guardar borrador y salir</button>
     </div>
     <div id="stepHost"></div>
   </div>
@@ -705,6 +718,94 @@ function stampSVG(pct, size){
     </text></svg>`;
 }
 
+/* ======================= DRAFTS (local auto-save) ======================= */
+const DRAFTS_KEY = 'oakberry_drafts_v1';
+function getDraftsMap(){
+  try{ return JSON.parse(localStorage.getItem(DRAFTS_KEY) || '{}'); }catch(e){ return {}; }
+}
+function setDraftsMap(map){
+  try{ localStorage.setItem(DRAFTS_KEY, JSON.stringify(map)); }catch(e){}
+}
+function saveDraft(){
+  if(!current || !current.inserted) return;
+  const map = getDraftsMap();
+  map[current.id] = {
+    id: current.id, store_id: current.store_id, store_name: current.store_name,
+    evaluador_name: current.evaluador_name, encargado_name: current.encargado_name,
+    tipo: current.tipo, fecha: current.fecha, hora: current.hora,
+    responses: current.responses,
+    observaciones: current.observaciones, acciones_corregir: current.acciones_corregir,
+    fecha_mejoras: current.fecha_mejoras,
+    firma_evaluador: current.firma_evaluador, firma_encargado: current.firma_encargado,
+    stepIndex, savedAt: new Date().toISOString(),
+  };
+  setDraftsMap(map);
+}
+function removeDraft(id){
+  const map = getDraftsMap();
+  delete map[id];
+  setDraftsMap(map);
+}
+function listDrafts(){
+  return Object.values(getDraftsMap()).sort((a,b)=> new Date(b.savedAt)-new Date(a.savedAt));
+}
+function timeAgo(iso){
+  const diffMin = Math.round((Date.now()-new Date(iso).getTime())/60000);
+  if(diffMin<1) return 'hace un momento';
+  if(diffMin<60) return `hace ${diffMin} min`;
+  const h = Math.round(diffMin/60);
+  if(h<24) return `hace ${h}h`;
+  return `hace ${Math.round(h/24)}d`;
+}
+function renderDrafts(){
+  const section = document.getElementById('draftsSection');
+  const list = document.getElementById('draftsList');
+  if(!section) return;
+  const drafts = listDrafts();
+  if(drafts.length===0){ section.classList.add('hidden'); return; }
+  section.classList.remove('hidden');
+  list.innerHTML = drafts.map(d=>`<div class="draft-card">
+      <div class="draft-main"><div class="t1">${d.store_name}</div><div class="t2">${d.tipo} · Guardado ${timeAgo(d.savedAt)}</div></div>
+      <button class="btn sm" data-resumedraft="${d.id}">Continuar</button>
+      <button class="icon-mini" data-discarddraft="${d.id}" title="Descartar">✕</button>
+    </div>`).join('');
+  list.querySelectorAll('[data-resumedraft]').forEach(btn=> btn.onclick = ()=> resumeDraft(btn.dataset.resumedraft));
+  list.querySelectorAll('[data-discarddraft]').forEach(btn=> btn.onclick = ()=>{
+    if(!confirm('¿Descartar este borrador? Se perderá el avance no guardado.')) return;
+    removeDraft(btn.dataset.discarddraft);
+    renderDrafts();
+  });
+}
+async function resumeDraft(id){
+  const d = getDraftsMap()[id];
+  if(!d) return;
+  current = {
+    id: d.id, inserted: true, store_id: d.store_id, store_name: d.store_name,
+    evaluador_name: d.evaluador_name, encargado_name: d.encargado_name||'',
+    tipo: d.tipo, fecha: d.fecha, hora: d.hora,
+    responses: d.responses, photos: {},
+    observaciones: d.observaciones||'', acciones_corregir: d.acciones_corregir||'', fecha_mejoras: d.fecha_mejoras||'',
+    firma_evaluador: d.firma_evaluador||null, firma_encargado: d.firma_encargado||null,
+  };
+  sections.forEach(sec=> sec.items.forEach(it=>{ if(!current.photos[it.id]) current.photos[it.id]=[]; }));
+  const { data: existingPhotos } = await sb.from('storeaudit_photos').select('*').eq('audit_id', current.id);
+  if(existingPhotos && existingPhotos.length){
+    const paths = existingPhotos.map(p=>p.storage_path);
+    const { data: signed } = await sb.storage.from(PHOTOS_BUCKET).createSignedUrls(paths, 3600);
+    const urlMap = {};
+    (signed||[]).forEach((s,i)=>{ if(s.signedUrl) urlMap[paths[i]] = s.signedUrl; });
+    existingPhotos.forEach(p=>{
+      if(!current.photos[p.item_id]) current.photos[p.item_id]=[];
+      current.photos[p.item_id].push({ path: p.storage_path, previewUrl: urlMap[p.storage_path]||'' });
+    });
+  }
+  buildSteps();
+  stepIndex = Math.min(d.stepIndex||0, steps.length-1);
+  switchView('view-form');
+  renderStep();
+  showToast('Continuando borrador de ' + current.store_name + '.');
+}
+
 /* ======================= AUTH ======================= */
 document.getElementById('btnLogin').onclick = doLogin;
 document.getElementById('loginPassword').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
@@ -804,6 +905,7 @@ function renderDashboard(){
   row.appendChild(addBtn);
 
   renderDashKpis();
+  renderDrafts();
 
   const list = document.getElementById('recentList');
   const filtered = (historyFilterStore ? audits.filter(a=>a.store_name===historyFilterStore) : audits).slice(0,6);
@@ -1114,6 +1216,11 @@ function buildSteps(){
   steps.push({type:'resumen'});
 }
 
+document.getElementById('btnSaveDraftExit').onclick = ()=>{
+  if(current && current.inserted){ saveDraft(); showToast('Borrador guardado. Podés continuar luego desde el inicio.'); }
+  switchView('view-dashboard'); renderDashboard();
+};
+
 document.getElementById('btnNewAudit').onclick = ()=>{
   if(sections.length===0){ showToast('No hay secciones configuradas todavía.'); return; }
   current = {
@@ -1237,6 +1344,9 @@ function renderStep(){
         <button class="btn block" id="nextObs">Siguiente</button>
       </div>
     </div>`;
+    document.getElementById('f-obs').oninput = (e)=>{ current.observaciones = e.target.value; saveDraft(); };
+    document.getElementById('f-acc').oninput = (e)=>{ current.acciones_corregir = e.target.value; saveDraft(); };
+    document.getElementById('f-fm').oninput = (e)=>{ current.fecha_mejoras = e.target.value || null; saveDraft(); };
     document.getElementById('prevObs').onclick = ()=> goStep(stepIndex-1);
     document.getElementById('nextObs').onclick = ()=>{
       current.observaciones = document.getElementById('f-obs').value;
@@ -1264,7 +1374,7 @@ function renderStep(){
         <button class="btn block" id="nextSig">Ver resumen</button>
       </div>
     </div>`;
-    document.getElementById('f-encargado').oninput = (e)=> current.encargado_name = e.target.value;
+    document.getElementById('f-encargado').oninput = (e)=>{ current.encargado_name = e.target.value; saveDraft(); };
     setupSignaturePad('sig-eval','eval');
     setupSignaturePad('sig-enc','enc');
     host.querySelectorAll('[data-clear]').forEach(btn=> btn.onclick = ()=> clearSignature(btn.dataset.clear));
@@ -1329,7 +1439,7 @@ function wireItems(items){
     const r = current.responses[it.id];
     if(it.item_type==='number'){
       const numInput = host.querySelector(`[data-num="${it.id}"]`);
-      if(numInput) numInput.oninput = (e)=>{ r.value = e.target.value; };
+      if(numInput) numInput.oninput = (e)=>{ r.value = e.target.value; saveDraft(); };
       return;
     }
     const seg = host.querySelector(`.seg[data-idx="${it.id}"]`);
@@ -1341,11 +1451,12 @@ function wireItems(items){
           btn.classList.add('on');
           const sec = sections.find(s=>s.items.some(x=>x.id===it.id));
           updateSecScore(sec);
+          saveDraft();
         };
       });
     }
     const cinput = host.querySelector(`[data-c="${it.id}"]`);
-    if(cinput) cinput.oninput = (e)=>{ r.comentario = e.target.value; };
+    if(cinput) cinput.oninput = (e)=>{ r.comentario = e.target.value; saveDraft(); };
     const pbtn = host.querySelector(`[data-photo="${it.id}"]`);
     if(pbtn) pbtn.onclick = ()=> triggerPhotoCapture(it.id);
   });
@@ -1379,7 +1490,7 @@ function computeScore(){
   return {pts,max,pct};
 }
 
-function goStep(i){ stepIndex = i; renderStep(); }
+function goStep(i){ stepIndex = i; renderStep(); saveDraft(); }
 
 /* ---------- photo capture ---------- */
 let pendingPhotoItemId = null;
@@ -1529,6 +1640,7 @@ async function finalizeAudit(){
   btn.disabled = false; btn.textContent = 'Guardar auditoría';
   if(updErr || respErr){ showToast('Hubo un problema al guardar. Intentá de nuevo.'); return; }
   showToast('Auditoría guardada.');
+  removeDraft(current.id);
   await loadRecentAudits();
   openDetail(current.id);
 }
