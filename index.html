@@ -759,6 +759,7 @@ function showToast(msg){
   showToast._t = setTimeout(()=>t.classList.remove('show'), 2600);
 }
 function switchView(id){
+  if(id!=='view-form'){ try{ localStorage.removeItem('oakberry_active_audit'); }catch(e){} }
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   window.scrollTo({top:0, behavior:'smooth'});
@@ -811,11 +812,13 @@ function saveDraft(){
     stepIndex, savedAt: new Date().toISOString(),
   };
   setDraftsMap(map);
+  try{ localStorage.setItem('oakberry_active_audit', current.id); }catch(e){}
 }
 function removeDraft(id){
   const map = getDraftsMap();
   delete map[id];
   setDraftsMap(map);
+  try{ if(localStorage.getItem('oakberry_active_audit')===id) localStorage.removeItem('oakberry_active_audit'); }catch(e){}
 }
 function listDrafts(){
   return Object.values(getDraftsMap()).sort((a,b)=> new Date(b.savedAt)-new Date(a.savedAt));
@@ -904,6 +907,10 @@ function showLogin(){
   document.getElementById('mainApp').classList.add('hidden');
 }
 async function boot(){
+  // If the session just refreshed (e.g. returning from the camera) while the user is mid-audit, don't kick them out of the form
+  if(profile && session && profile.id===session.user.id && document.getElementById('view-form').classList.contains('active')) return;
+  let activeIdAtStart = null;
+  try{ activeIdAtStart = localStorage.getItem('oakberry_active_audit'); }catch(e){}
   document.getElementById('loginScreen').classList.add('hidden');
   document.getElementById('mainApp').classList.remove('hidden');
   const { data, error } = await sb.from('storeaudit_profiles').select('*').eq('id', session.user.id).single();
@@ -923,6 +930,13 @@ async function boot(){
   renderDashboard();
   loadRecentAudits();
   purgeOldTrash();
+  try{
+    const activeId = activeIdAtStart;
+    if(activeId && getDraftsMap()[activeId]){
+      await resumeDraft(activeId);
+      showToast('Retomamos tu auditoría justo donde la dejaste.');
+    }
+  }catch(e){ try{ localStorage.removeItem('oakberry_active_audit'); }catch(_){} }
 }
 
 /* ======================= DATA LOADERS ======================= */
@@ -1851,6 +1865,7 @@ const hiddenInput = document.getElementById('hiddenPhotoInput');
 function triggerPhotoCapture(itemId){
   if(!current.inserted){ showToast('Esperá a que la auditoría termine de iniciarse.'); return; }
   pendingPhotoItemId = itemId;
+  saveDraft();
   hiddenInput.value = '';
   hiddenInput.click();
 }
