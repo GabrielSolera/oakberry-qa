@@ -220,6 +220,27 @@ a{color:var(--purple);}
 }
 .sec-na-row input{width:18px; height:18px;}
 .item.item-disabled{opacity:.4; pointer-events:none;}
+.cuadre{margin-top:14px;}
+.cuadre.item-disabled{opacity:.4; pointer-events:none;}
+.cq-block{border:1px solid var(--line); border-radius:12px; margin-top:10px; background:#fff; overflow:hidden;}
+.cq-block > summary{list-style:none; cursor:pointer; padding:12px 14px; font-weight:700; font-size:13.5px; color:var(--purple); display:flex; justify-content:space-between; align-items:center; background:var(--purple-soft);}
+.cq-block > summary::-webkit-details-marker{display:none;}
+.cq-block > summary::after{content:'▾'; font-size:12px;}
+.cq-block[open] > summary::after{content:'▴';}
+.cq-body{padding:12px 14px;}
+.cq-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+.cq-field label{display:block; font-size:11.5px; font-weight:700; color:#6b5d72; margin-bottom:4px;}
+.cq-field input, .cq-dep-row input{width:100%; border:1px solid var(--line); border-radius:9px; padding:10px 11px; font-size:14px; background:#fff; color:var(--ink);}
+.cq-dep-row{display:grid; grid-template-columns:1fr 1fr 34px; gap:8px; margin-top:8px; align-items:center;}
+.cq-results{margin-top:12px; border-radius:12px; padding:10px 14px 12px; background:var(--purple-soft);}
+.cq-line{display:flex; justify-content:space-between; gap:10px; font-size:12.5px; padding:7px 0; border-top:1px solid rgba(58,26,82,.1);}
+.cq-line:first-child{border-top:none;}
+.cq-line .v{font-weight:700; text-align:right; flex:0 0 auto; max-width:46%;}
+.cq-red{color:#a8202f;} .cq-green{color:#1e6e5c;} .cq-amber{color:#8a5215;}
+.cq-total{margin-top:8px; padding:11px 12px; border-radius:10px; font-weight:700; font-size:14px; text-align:center;}
+.cq-total.red{background:var(--red-soft); color:#a8202f;}
+.cq-total.green{background:var(--green-soft); color:#1e6e5c;}
+.cq-total.amber{background:var(--granola-soft); color:#8a5215;}
 .step-title{font-size:21px; margin-top:4px; font-style:italic; color:var(--purple);}
 .step-sub{font-size:13px; color:#8a7791; margin-top:4px;}
 
@@ -529,7 +550,10 @@ canvas.sigpad{width:100%; height:150px; display:block; touch-action:none; border
     <div class="progress-wrap">
       <div class="progress-track"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
       <div class="progress-meta"><span id="progressLabel">Paso 1</span><span id="progressPct">0%</span></div>
-      <button class="btn ghost sm" id="btnSaveDraftExit" style="margin-top:4px; padding:6px 2px; color:rgba(255,255,255,.75);">💾 Guardar borrador y salir</button>
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:4px;">
+        <button class="btn ghost sm" id="btnSaveDraftExit" style="padding:6px 2px; color:rgba(255,255,255,.75);">💾 Guardar borrador y salir</button>
+        <button class="btn ghost sm" id="btnCancelAudit" style="padding:6px 2px; color:#ffb3bb;">✕ Cancelar auditoría</button>
+      </div>
     </div>
     <div id="stepHost"></div>
   </div>
@@ -805,7 +829,7 @@ function saveDraft(){
     id: current.id, store_id: current.store_id, store_name: current.store_name,
     evaluador_name: current.evaluador_name, encargado_name: current.encargado_name,
     tipo: current.tipo, fecha: current.fecha, hora: current.hora,
-    responses: current.responses, sectionNA: current.sectionNA||{},
+    responses: current.responses, sectionNA: current.sectionNA||{}, cuadre: current.cuadre||null,
     observaciones: current.observaciones, acciones_corregir: current.acciones_corregir,
     fecha_mejoras: current.fecha_mejoras,
     firma_evaluador: current.firma_evaluador, firma_encargado: current.firma_encargado,
@@ -857,11 +881,14 @@ async function resumeDraft(id){
     id: d.id, inserted: true, store_id: d.store_id, store_name: d.store_name,
     evaluador_name: d.evaluador_name, encargado_name: d.encargado_name||'',
     tipo: d.tipo, fecha: d.fecha, hora: d.hora,
-    responses: d.responses, sectionNA: d.sectionNA||{}, photos: {},
+    responses: d.responses, sectionNA: d.sectionNA||{}, cuadre: Object.assign(newCuadre(), d.cuadre||{}), photos: {},
     observaciones: d.observaciones||'', acciones_corregir: d.acciones_corregir||'', fecha_mejoras: d.fecha_mejoras||'',
     firma_evaluador: d.firma_evaluador||null, firma_encargado: d.firma_encargado||null,
   };
-  sections.forEach(sec=> sec.items.forEach(it=>{ if(!current.photos[it.id]) current.photos[it.id]=[]; }));
+  sections.forEach(sec=> sec.items.forEach(it=>{
+    if(!current.photos[it.id]) current.photos[it.id]=[];
+    if(!current.responses[it.id]) current.responses[it.id] = { value:null, comentario:'', section_key:sec.key, section_title:sec.title, prompt:it.prompt, item_type:it.item_type };
+  }));
   const { data: existingPhotos } = await sb.from('storeaudit_photos').select('*').eq('audit_id', current.id);
   if(existingPhotos && existingPhotos.length){
     const paths = existingPhotos.map(p=>p.storage_path);
@@ -1554,6 +1581,18 @@ document.getElementById('btnSaveDraftExit').onclick = ()=>{
   switchView('view-dashboard'); renderDashboard();
 };
 
+document.getElementById('btnCancelAudit').onclick = async ()=>{
+  if(!confirm('¿Cancelar esta auditoría? Se descarta el avance que llevás.')) return;
+  if(current && current.inserted){
+    const id = current.id;
+    removeDraft(id);
+    try{ await trashAudit(id); }catch(e){}
+  }
+  current = null;
+  showToast('Auditoría cancelada.');
+  switchView('view-dashboard'); renderDashboard();
+};
+
 document.getElementById('btnNewAudit').onclick = ()=>{
   if(sections.length===0){ showToast('No hay secciones configuradas todavía.'); return; }
   current = {
@@ -1568,6 +1607,7 @@ document.getElementById('btnNewAudit').onclick = ()=>{
     hora: new Date().toTimeString().slice(0,5),
     responses: {},   // item_id -> {value, comentario, section_key, prompt, item_type, sort:section_sort}
     sectionNA: {},   // section_key -> true if marked "no aplica" entirely
+    cuadre: newCuadre(),
     photos: {},      // item_id -> [{path, previewUrl}]
     observaciones: '',
     acciones_corregir: '',
@@ -1626,8 +1666,12 @@ function renderStep(){
       <div class="field"><label>Tipo de inspección</label>
         <select id="f-tipo">${['Rutina','Sorpresa','Seguimiento','Apertura'].map(t=>`<option ${t===current.tipo?'selected':''}>${t}</option>`).join('')}</select>
       </div>
-      <div class="step-actions"><button class="btn block" id="next0">Comenzar auditoría</button></div>
+      <div class="step-actions">
+        <button class="btn secondary block" id="cancel0">Cancelar</button>
+        <button class="btn block" id="next0">Comenzar auditoría</button>
+      </div>
     </div>`;
+    document.getElementById('cancel0').onclick = ()=>{ switchView('view-dashboard'); renderDashboard(); };
     document.getElementById('next0').onclick = async ()=>{
       const sel = document.getElementById('f-restaurante');
       current.store_id = sel.value;
@@ -1656,6 +1700,7 @@ function renderStep(){
         <span>Esta sección no aplica a esta tienda</span>
         <input type="checkbox" id="secNaToggle" ${current.sectionNA[sec.key]?'checked':''}>
       </div>
+      ${sec.key==='financiera' ? cuadreWidgetHTML() : ''}
       <div id="secItemsHost">${sec.items.map((it,i)=> renderItemHTML(it,i)).join('')}</div>
       <div class="section-score" id="secScore"></div>
       <div class="step-actions">
@@ -1664,6 +1709,7 @@ function renderStep(){
       </div>
     </div>`;
     wireItems(sec.items);
+    if(sec.key==='financiera') wireCuadre();
     updateSecScore(sec);
     applySecNaState(sec);
     document.getElementById('secNaToggle').onchange = (e)=>{
@@ -1820,10 +1866,110 @@ function wireItems(items){
   });
 }
 
+/* ======================= CUADRE DE CAJA ======================= */
+const CQ_CHANNELS = [['uber','Uber Eats'],['pedidosya','Pedidos Ya'],['efectivo','Efectivo'],['tarjeta','Tarjeta']];
+function newCuadre(){
+  const z = ()=>({uber:'',pedidosya:'',efectivo:'',tarjeta:''});
+  return { fondo:'', sistema:z(), real:z(), conteo:{efectivo:'',facturas:''}, depositos:[] };
+}
+function currencyFor(storeId){
+  const st = stores.find(s=>s.id===storeId);
+  return st && st.country==='Panamá' ? '$' : '₡';
+}
+function fmtMoney(n, sym){
+  return sym + Math.abs(n).toLocaleString('es-CR',{maximumFractionDigits:2});
+}
+function cuadreCalc(q){
+  const n = v=> parseFloat(v)||0;
+  const rows = CQ_CHANNELS.map(([k,l])=>({k,l,sys:n(q.sistema[k]),real:n(q.real[k]),diff:n(q.real[k])-n(q.sistema[k])}));
+  const fondo = n(q.fondo);
+  const contado = n(q.conteo.efectivo)+n(q.conteo.facturas);
+  const fondoDiff = contado - fondo;
+  const totalDiff = rows.reduce((s,r)=>s+r.diff,0) + fondoDiff;
+  const depTotal = (q.depositos||[]).reduce((s,d)=>s+n(d.monto),0);
+  return { rows, fondo, contado, fondoDiff, totalDiff, depTotal };
+}
+function cuadreHasData(q){
+  const c = cuadreCalc(q);
+  return c.rows.some(r=>r.sys||r.real) || c.fondo || c.contado || c.depTotal;
+}
+function cuadreLineText(diff, sym, isCash){
+  const r = Math.round(diff*100)/100;
+  if(r===0) return {txt:'Cuadra', cls:'cq-green'};
+  if(r<0) return {txt:(isCash?'Caja corta por ':'Faltante de ')+fmtMoney(r,sym), cls:'cq-red'};
+  return {txt:'Sobrante de '+fmtMoney(r,sym), cls:'cq-amber'};
+}
+function cuadreResultsHTML(q, sym){
+  const c = cuadreCalc(q);
+  let h = '';
+  c.rows.forEach(r=>{
+    if(!r.sys && !r.real) return;
+    const t = cuadreLineText(r.diff, sym, r.k==='efectivo');
+    h += `<div class="cq-line"><span>${r.l} · sistema ${fmtMoney(r.sys,sym)} / real ${fmtMoney(r.real,sym)}</span><span class="v ${t.cls}">${t.txt}</span></div>`;
+  });
+  if(c.fondo || c.contado){
+    const t = cuadreLineText(c.fondoDiff, sym, true);
+    h += `<div class="cq-line"><span>Fondo de caja · asignado ${fmtMoney(c.fondo,sym)} / contado ${fmtMoney(c.contado,sym)}</span><span class="v ${t.cls}">${t.txt}</span></div>`;
+  }
+  if(c.depTotal){ h += `<div class="cq-line"><span>Depósitos pendientes (${(q.depositos||[]).length})</span><span class="v">${fmtMoney(c.depTotal,sym)}</span></div>`; }
+  const any = c.rows.some(r=>r.sys||r.real) || c.fondo || c.contado;
+  if(!any) return h || '<div class="cq-line"><span>Ingresá los montos para ver el cuadre.</span></div>';
+  const tr = Math.round(c.totalDiff*100)/100;
+  const cls = tr===0?'green':(tr<0?'red':'amber');
+  const txt = tr===0 ? 'Caja cuadrada ✓' : (tr<0 ? 'Caja corta por '+fmtMoney(tr,sym) : 'Caja con sobrante de '+fmtMoney(tr,sym));
+  return h + `<div class="cq-total ${cls}">TOTAL: ${txt}</div>`;
+}
+function cuadreWidgetHTML(){
+  const q = current.cuadre, sym = currencyFor(current.store_id);
+  const inp = (path, val, ph)=>`<input type="number" inputmode="decimal" step="0.01" data-cq="${path}" value="${(val===''||val==null)?'':val}" placeholder="${ph||'0'}">`;
+  const grid = (grp)=>`<div class="cq-grid">${CQ_CHANNELS.map(([k,l])=>`<div class="cq-field"><label>${l} (${sym})</label>${inp(grp+'.'+k, q[grp][k])}</div>`).join('')}</div>`;
+  return `<div class="cuadre ${current.sectionNA.financiera?'item-disabled':''}" id="cuadreHost">
+    <details class="cq-block" open><summary>Fondo de caja de la tienda</summary><div class="cq-body"><div class="cq-field"><label>Monto asignado de fondo de caja (${sym})</label>${inp('fondo', q.fondo, '50000')}</div></div></details>
+    <details class="cq-block" open><summary>Ventas del día · según el sistema</summary><div class="cq-body">${grid('sistema')}</div></details>
+    <details class="cq-block" open><summary>Ventas del día · reales (lo verificado)</summary><div class="cq-body">${grid('real')}</div></details>
+    <details class="cq-block" open><summary>Conteo del fondo de caja</summary><div class="cq-body"><div class="cq-grid"><div class="cq-field"><label>Efectivo contado (${sym})</label>${inp('conteo.efectivo', q.conteo.efectivo)}</div><div class="cq-field"><label>En facturas / vouchers (${sym})</label>${inp('conteo.facturas', q.conteo.facturas)}</div></div></div></details>
+    <details class="cq-block" open><summary>Depósitos pendientes</summary><div class="cq-body"><div id="cqDeps"></div><button class="btn secondary sm" id="cqAddDep" style="margin-top:10px;">+ Agregar depósito</button></div></details>
+    <div class="cq-results" id="cuadreResults"></div>
+  </div>`;
+}
+function refreshCuadreResults(){
+  const el = document.getElementById('cuadreResults'); if(!el) return;
+  el.innerHTML = cuadreResultsHTML(current.cuadre, currencyFor(current.store_id));
+}
+function renderCuadreDeps(){
+  const host = document.getElementById('cqDeps'); if(!host) return;
+  const sym = currencyFor(current.store_id);
+  const deps = current.cuadre.depositos;
+  host.innerHTML = (deps.length ? '' : '<div style="font-size:12px;color:#8a7791;">Sin depósitos pendientes.</div>') +
+    deps.map((d,i)=>`<div class="cq-dep-row"><input type="date" data-dep="${i}.fecha" value="${d.fecha||''}"><input type="number" inputmode="decimal" step="0.01" data-dep="${i}.monto" value="${(d.monto===''||d.monto==null)?'':d.monto}" placeholder="Monto ${sym}"><button class="icon-mini" data-depdel="${i}" title="Quitar">✕</button></div>`).join('');
+  host.querySelectorAll('[data-dep]').forEach(el=>{
+    el.oninput = ()=>{ const [i,f] = el.dataset.dep.split('.'); current.cuadre.depositos[+i][f] = el.value; refreshCuadreResults(); saveDraft(); };
+  });
+  host.querySelectorAll('[data-depdel]').forEach(b=>{
+    b.onclick = ()=>{ current.cuadre.depositos.splice(+b.dataset.depdel,1); renderCuadreDeps(); refreshCuadreResults(); saveDraft(); };
+  });
+}
+function wireCuadre(){
+  const host = document.getElementById('cuadreHost'); if(!host) return;
+  host.querySelectorAll('input[data-cq]').forEach(el=>{
+    el.oninput = ()=>{
+      const p = el.dataset.cq.split('.');
+      if(p.length===1) current.cuadre[p[0]] = el.value; else current.cuadre[p[0]][p[1]] = el.value;
+      refreshCuadreResults(); saveDraft();
+    };
+  });
+  document.getElementById('cqAddDep').onclick = ()=>{
+    current.cuadre.depositos.push({fecha:new Date().toISOString().slice(0,10), monto:''});
+    renderCuadreDeps(); saveDraft();
+  };
+  renderCuadreDeps(); refreshCuadreResults();
+}
 function applySecNaState(sec){
   const host = document.getElementById('secItemsHost');
   if(!host) return;
   host.querySelectorAll('.item').forEach(el=> el.classList.toggle('item-disabled', !!current.sectionNA[sec.key]));
+  const cq = document.getElementById('cuadreHost');
+  if(cq) cq.classList.toggle('item-disabled', !!current.sectionNA[sec.key]);
 }
 function updateSecScore(sec){
   const el = document.getElementById('secScore');
@@ -1989,6 +2135,8 @@ async function finalizeAudit(){
   const btn = document.getElementById('saveAudit');
   btn.disabled = true; btn.textContent = 'Guardando…';
   const {pts,max,pct} = computeScore();
+  const cuadreToSave = (!current.sectionNA.financiera && current.cuadre && cuadreHasData(current.cuadre))
+    ? Object.assign({}, current.cuadre, { currency: currencyFor(current.store_id) }) : null;
 
   const { error: updErr } = await sb.from('storeaudit_audits').update({
     store_id: current.store_id, store_name: current.store_name,
@@ -1997,6 +2145,7 @@ async function finalizeAudit(){
     observaciones: current.observaciones, acciones_corregir: current.acciones_corregir,
     fecha_mejoras: current.fecha_mejoras, firma_evaluador: current.firma_evaluador,
     firma_encargado: current.firma_encargado, score_pts: pts, score_max: max, score_pct: pct,
+    cuadre: cuadreToSave,
   }).eq('id', current.id);
 
   const rows = Object.entries(current.responses).map(([item_id, r])=>({
@@ -2082,6 +2231,12 @@ async function openDetail(id){
     html += `</div>`;
   });
 
+  if(a.cuadre){
+    const q = Object.assign(newCuadre(), a.cuadre);
+    const sym = a.cuadre.currency || '₡';
+    const deps = q.depositos||[];
+    html += `<div class="detail-section"><h3>Cuadre de caja</h3><div class="cq-results" style="background:#faf7fc;">${cuadreResultsHTML(q, sym)}${deps.length ? '<div style="margin-top:10px;font-size:12.5px;font-weight:700;color:#6b5d72;">Depósitos pendientes</div>'+deps.map(d=>`<div class="cq-line"><span>${d.fecha||'—'}</span><span class="v">${fmtMoney(parseFloat(d.monto)||0,sym)}</span></div>`).join('') : ''}</div></div>`;
+  }
   {
     html += `<div class="detail-section"><h3>Observaciones</h3><div class="di-text" style="font-size:13.5px;">${(a.observaciones||'Sin observaciones registradas.').replace(/\n/g,'<br>')}</div>`;
     html += `<div style="margin-top:14px; font-size:12.5px; font-weight:700; color:#6b5d72; text-transform:uppercase; letter-spacing:.04em;">Plan de acción</div>`;
@@ -2130,6 +2285,11 @@ function buildSummaryText(a, responses){
   const bySec = {};
   responses.forEach(r=>{ if(r.item_type!=='check') return; (bySec[r.section_key]=bySec[r.section_key]||{p:0,m:0}); if(r.value==='si'){bySec[r.section_key].p+=2;bySec[r.section_key].m+=2;} else if(r.value==='no'){bySec[r.section_key].m+=2;} });
   Object.entries(bySec).forEach(([key,s])=>{ t += `${key}: ${s.p}/${s.m}\n`; });
+  if(a.cuadre){
+    const q = Object.assign(newCuadre(), a.cuadre); const sym = a.cuadre.currency || '₡';
+    const tr = Math.round(cuadreCalc(q).totalDiff*100)/100;
+    t += `\nCuadre de caja: ` + (tr===0 ? 'cuadrada' : (tr<0 ? 'caja corta por '+fmtMoney(tr,sym) : 'sobrante de '+fmtMoney(tr,sym))) + `\n`;
+  }
   if(a.acciones_corregir){ t += `\nAcciones a corregir:\n` + a.acciones_corregir.split('\n').filter(Boolean).map(x=>'- '+x).join('\n') + '\n'; }
   if(a.observaciones) t += `\nObservaciones: ${a.observaciones}\n`;
   return t;
